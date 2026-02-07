@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import BottomNav from "../components/shared/BottomNav";
 import BackButton from "../components/shared/BackButton";
 import { MdRestaurantMenu } from "react-icons/md";
@@ -6,13 +7,22 @@ import MenuContainer from "../components/menu/MenuContainer";
 import CustomerInfo from "../components/menu/CustomerInfo";
 import CartInfo from "../components/menu/CartInfo";
 import Bill from "../components/menu/Bill";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setCustomer, updateTable } from "../redux/slices/customerSlice";
 
 const Menu = () => {
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { orderId, table, customerName } = location.state || {};
 
-    useEffect(() => {
-      document.title = "POS | Menú"
-    }, [])
+  useEffect(() => {
+    document.title = "POS | Menú"
+    
+    if (orderId && table) {
+        dispatch(setCustomer({ name: customerName || "Cliente", phone: "", guests: 0 }));
+        dispatch(updateTable({ table: table }));
+    }
+  }, [orderId, table, customerName, dispatch])
 
   const customerData = useSelector((state) => state.customer);
 
@@ -53,7 +63,7 @@ const Menu = () => {
         <CartInfo />
         <hr className="border-[#2a2a2a] border-t-2" />
         {/* Bills */}
-        <Bill />
+        <Bill orderId={orderId} />
       </div>
 
       <BottomNav />

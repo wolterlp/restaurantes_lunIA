@@ -5,6 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { FaUserShield, FaConciergeBell, FaCashRegister, FaUtensils, FaMotorcycle } from "react-icons/fa";
 
 const Register = ({setIsRegister}) => {
   const dispatch = useDispatch();
@@ -12,10 +13,34 @@ const Register = ({setIsRegister}) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    countryCode: "+57",
     phone: "",
     password: "",
     role: "",
   });
+
+  const countryCodes = [
+    { code: "+1", country: "US/CA" },
+    { code: "+52", country: "MX" },
+    { code: "+57", country: "CO" },
+    { code: "+34", country: "ES" },
+    { code: "+54", country: "AR" },
+    { code: "+56", country: "CL" },
+    { code: "+51", country: "PE" },
+    { code: "+593", country: "EC" },
+    { code: "+58", country: "VE" },
+    { code: "+503", country: "SV" },
+    { code: "+502", country: "GT" },
+    { code: "+504", country: "HN" },
+    { code: "+505", country: "NI" },
+    { code: "+506", country: "CR" },
+    { code: "+507", country: "PA" },
+    { code: "+591", country: "BO" },
+    { code: "+595", country: "PY" },
+    { code: "+598", country: "UY" },
+    { code: "+86", country: "CN" },
+    { code: "+91", country: "IN" },
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,6 +63,7 @@ const Register = ({setIsRegister}) => {
       setFormData({
         name: "",
         email: "",
+        countryCode: "+57",
         phone: "",
         password: "",
         role: "",
@@ -48,14 +74,13 @@ const Register = ({setIsRegister}) => {
       if (role === "Admin") {
         navigate("/");
       } else if (role === "Waiter") {
-        navigate("/tables");
+        navigate("/orders");
       } else {
         navigate("/orders");
       }
     },
     onError: (error) => {
-      const { response } = error;
-      const message = response.data.message;
+      const message = error.response?.data?.message || "Error al registrar empleado";
       enqueueSnackbar(message, { variant: "error" });
     },
   });
@@ -64,10 +89,10 @@ const Register = ({setIsRegister}) => {
     <div>
       <form onSubmit={handleSubmit}>
         <div>
-          <label className="block text-[#ababab] mb-2 text-sm font-medium">
+          <label className="block text-gray-300 mb-2 text-sm font-bold">
             Nombre del Empleado
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
             <input
               type="text"
               name="name"
@@ -80,10 +105,10 @@ const Register = ({setIsRegister}) => {
           </div>
         </div>
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
+          <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Correo del Empleado
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
             <input
               type="email"
               name="email"
@@ -96,26 +121,47 @@ const Register = ({setIsRegister}) => {
           </div>
         </div>
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
+          <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Teléfono del Empleado
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
-            <input
-              type="number"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Ingrese teléfono del empleado"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-              required
-            />
+          <div className="flex gap-2">
+            <div className="flex items-center rounded-lg bg-[#1f1f1f] border border-[#383838] w-28">
+                 <select
+                    name="countryCode"
+                    value={formData.countryCode}
+                    onChange={handleChange}
+                    className="bg-transparent w-full p-4 text-white outline-none appearance-none text-center cursor-pointer"
+                  >
+                    {countryCodes.map((c) => (
+                        <option key={c.code} value={c.code} className="bg-[#1f1f1f]">
+                            {c.code} {c.country}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            <div className="flex items-center rounded-lg p-4 bg-[#1f1f1f] border border-[#383838] flex-1">
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^\d*$/.test(val)) {
+                          setFormData({ ...formData, phone: val });
+                      }
+                  }}
+                  placeholder="Ingrese teléfono (solo números)"
+                  className="bg-transparent flex-1 text-white focus:outline-none"
+                  required
+                />
+            </div>
           </div>
         </div>
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
+          <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Contraseña
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
             <input
               type="password"
               name="password"
@@ -128,26 +174,30 @@ const Register = ({setIsRegister}) => {
           </div>
         </div>
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
+          <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Elige tu rol
           </label>
 
-          <div className="flex item-center gap-3 mt-4">
+          <div className="flex item-center gap-3 mt-4 flex-wrap">
             {[
-              { value: "Waiter", label: "Mesero" },
-              { value: "Cashier", label: "Cajero" },
-              { value: "Admin", label: "Admin" }
+              { value: "Waiter", label: "Mesero", icon: <FaConciergeBell /> },
+              { value: "Cashier", label: "Cajero", icon: <FaCashRegister /> },
+              { value: "Admin", label: "Admin", icon: <FaUserShield /> },
+              { value: "Kitchen", label: "Cocina", icon: <FaUtensils /> },
+              { value: "Delivery", label: "Repartidor", icon: <FaMotorcycle /> }
             ].map((roleObj) => {
               return (
                 <button
                   key={roleObj.value}
                   type="button"
                   onClick={() => handleRoleSelection(roleObj.value)}
-                  className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] ${
-                    formData.role === roleObj.value ? "bg-indigo-700" : ""
+                  className={`flex flex-col items-center justify-center gap-2 bg-[#1f1f1f] px-4 py-3 w-full sm:w-auto flex-1 rounded-lg text-[#ababab] hover:bg-[#2c2c2c] transition-colors ${
+                    formData.role === roleObj.value ? "bg-indigo-700 text-white" : ""
                   }`}
+                  title={roleObj.label}
                 >
-                  {roleObj.label}
+                  <span className="text-2xl">{roleObj.icon}</span>
+                  <span className="text-xs font-medium">{roleObj.label}</span>
                 </button>
               );
             })}

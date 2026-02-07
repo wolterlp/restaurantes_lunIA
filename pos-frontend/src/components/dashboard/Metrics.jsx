@@ -1,8 +1,10 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardMetrics } from "../../https";
+import { useCurrency } from "../../hooks/useCurrency";
 
 const Metrics = () => {
+  const { formatCurrency } = useCurrency();
   const { data: metricsRes } = useQuery({
     queryKey: ["metrics"],
     queryFn: getDashboardMetrics,
@@ -10,9 +12,9 @@ const Metrics = () => {
 
   const metrics = metricsRes?.data?.data || {};
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
-  };
+  // const formatCurrency = (amount) => {
+  //   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
+  // };
 
   const generalMetrics = [
     { 

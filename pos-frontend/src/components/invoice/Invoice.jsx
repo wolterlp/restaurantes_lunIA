@@ -1,9 +1,14 @@
 import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
+import { useCurrency } from "../../hooks/useCurrency";
+import { useSelector } from "react-redux";
 
 const Invoice = ({ orderInfo, setShowInvoice }) => {
+  const { role } = useSelector((state) => state.user);
   const invoiceRef = useRef(null);
+  const { formatCurrency } = useCurrency();
+
   const handlePrint = () => {
     const printContent = invoiceRef.current.innerHTML;
     const WinPrint = window.open("", "", "width=900,height=650");
@@ -16,6 +21,23 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                   body { font-family: Arial, sans-serif; padding: 20px; }
                   .receipt-container { width: 300px; border: 1px solid #ddd; padding: 10px; }
                   h2 { text-align: center; }
+                  .legal-disclaimer-container {
+                      margin-top: 20px;
+                      border-top: 2px dashed #000;
+                      padding-top: 10px;
+                      text-align: center;
+                  }
+                  .legal-disclaimer-header {
+                      font-size: 12px;
+                      font-weight: bold;
+                      text-transform: uppercase;
+                      margin-bottom: 5px;
+                  }
+                  .legal-disclaimer-text {
+                      font-size: 10px;
+                      color: #666;
+                      line-height: 1.2;
+                  }
                 </style>
               </head>
               <body>
@@ -71,10 +93,10 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
               <strong>Nombre:</strong> {orderInfo.customerDetails?.name || "Cliente"}
             </p>
             <p>
-              <strong>Teléfono:</strong> {orderInfo.customerDetails.phone}
+              <strong>Teléfono:</strong> {orderInfo.customerDetails?.phone || "N/A"}
             </p>
             <p>
-              <strong>Invitados:</strong> {orderInfo.customerDetails.guests}
+              <strong>Invitados:</strong> {orderInfo.customerDetails?.guests || 0}
             </p>
           </div>
 
@@ -83,7 +105,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
           <div className="mt-4 border-t pt-4">
             <h3 className="text-sm font-semibold">Artículos Pedidos</h3>
             <ul className="text-sm text-gray-700">
-              {orderInfo.items.map((item, index) => (
+              {orderInfo.items?.map((item, index) => (
                 <li
                   key={index}
                   className="flex justify-between items-center text-xs"
@@ -91,7 +113,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                   <span>
                     {item.name} x{item.quantity}
                   </span>
-                  <span>${item.price.toFixed(2)}</span>
+                  <span>{formatCurrency(item.price)}</span>
                 </li>
               ))}
             </ul>
@@ -101,19 +123,24 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
 
           <div className="mt-4 border-t pt-4 text-sm">
             <p>
-              <strong>Subtotal:</strong> ${orderInfo.bills.total.toFixed(2)}
+              <strong>Subtotal:</strong> {formatCurrency(orderInfo.bills.total)}
             </p>
             <p>
-              <strong>Impuesto:</strong> ${orderInfo.bills.tax.toFixed(2)}
+              <strong>Impuesto:</strong> {formatCurrency(orderInfo.bills.tax)}
             </p>
+            {orderInfo.bills.tip > 0 && (
+            <p>
+              <strong>Propina:</strong> {formatCurrency(orderInfo.bills.tip)}
+            </p>
+            )}
             <p className="text-md font-semibold">
-              <strong>Total General:</strong> $
-              {orderInfo.bills.totalWithTax.toFixed(2)}
+              <strong>Total General:</strong> {formatCurrency(orderInfo.bills.totalWithTax)}
             </p>
           </div>
 
           {/* Payment Details */}
 
+          {role !== "Waiter" && (
           <div className="mb-2 mt-2 text-xs">
             {orderInfo.paymentMethod === "Cash" && (
               <>
@@ -123,10 +150,10 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                 {orderInfo.paymentDetails && (
                   <>
                     <p>
-                        <strong>Dinero Recibido:</strong> ${orderInfo.paymentDetails.cashReceived?.toFixed(2)}
+                        <strong>Dinero Recibido:</strong> {formatCurrency(orderInfo.paymentDetails.cashReceived)}
                     </p>
                     <p>
-                        <strong>Cambio:</strong> ${orderInfo.paymentDetails.change?.toFixed(2)}
+                        <strong>Cambio:</strong> {formatCurrency(orderInfo.paymentDetails.change)}
                     </p>
                   </>
                 )}
@@ -144,7 +171,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                         <strong>Plataforma:</strong> {orderInfo.paymentDetails.transferPlatform}
                     </p>
                     <p>
-                        <strong>Monto:</strong> ${orderInfo.paymentDetails.transferAmount?.toFixed(2)}
+                        <strong>Monto:</strong> {formatCurrency(orderInfo.paymentDetails.transferAmount)}
                     </p>
                   </>
                 )}
@@ -159,10 +186,10 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                 {orderInfo.paymentDetails && (
                   <>
                     <p>
-                        <strong>Efectivo:</strong> ${orderInfo.paymentDetails.cashReceived?.toFixed(2)}
+                        <strong>Efectivo:</strong> {formatCurrency(orderInfo.paymentDetails.cashReceived)}
                     </p>
                     <p>
-                        <strong>Transferencia ({orderInfo.paymentDetails.transferPlatform}):</strong> ${orderInfo.paymentDetails.transferAmount?.toFixed(2)}
+                        <strong>Transferencia ({orderInfo.paymentDetails.transferPlatform}):</strong> {formatCurrency(orderInfo.paymentDetails.transferAmount)}
                     </p>
                   </>
                 )}
@@ -182,6 +209,16 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                 )}
               </>
             )}
+          </div>
+          )}
+          <div className="mt-6 border-t-2 border-dashed pt-4 text-center legal-disclaimer-container">
+            <p className="text-xs font-bold text-gray-800 uppercase mb-1 legal-disclaimer-header">
+              *** NO ES UNA FACTURA ***
+            </p>
+            <p className="text-[10px] text-gray-600 leading-tight legal-disclaimer-text">
+              Por favor pagar en caja. Este documento es un comprobante de pedido y no reemplaza la factura legal. 
+              La factura original será entregada en caja al momento del pago.
+            </p>
           </div>
         </div>
 

@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCashierCutPreview, getDailyCutPreview, createCashCut, addCashMovement } from '../../https';
 import CashierSelectionModal from './CashierSelectionModal';
 import { enqueueSnackbar } from 'notistack';
+import { useCurrency } from '../../hooks/useCurrency';
 
 const CashCut = () => {
     const queryClient = useQueryClient();
+    const { formatCurrency } = useCurrency();
     const [selectedCashier, setSelectedCashier] = useState(null);
     const [showCashierModal, setShowCashierModal] = useState(false);
     const [cutType, setCutType] = useState("Daily"); // "Daily" or "Cashier"
@@ -46,9 +48,9 @@ const CashCut = () => {
         totalTax: 0
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount || 0);
-    };
+    // const formatCurrency = (amount) => {
+    //     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount || 0);
+    // };
 
     const handleCashierSelect = (cashier) => {
         setSelectedCashier(cashier);

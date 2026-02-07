@@ -1,4 +1,5 @@
 import { axiosWrapper } from "./axiosWrapper";
+export { axiosWrapper };
 
 // API Endpoints
 
@@ -10,6 +11,7 @@ export const logout = () => axiosWrapper.post("/api/user/logout");
 
 // Admin User Management Endpoints
 export const getAllUsers = () => axiosWrapper.get("/api/user/all");
+export const getUsers = getAllUsers; // Alias for compatibility
 export const deleteUser = (id) => axiosWrapper.delete(`/api/user/${id}`);
 export const updateUser = ({ id, ...data }) => axiosWrapper.put(`/api/user/${id}`, data);
 
@@ -23,8 +25,12 @@ export const deleteTable = (tableId) => axiosWrapper.delete(`/api/table/${tableI
 // Order Endpoints
 export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
 export const getOrders = (params) => axiosWrapper.get("/api/order", { params });
-export const updateOrderStatus = ({ orderId, orderStatus }) =>
-  axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
+export const addItemsToOrder = ({ orderId, items, bills }) => 
+  axiosWrapper.put(`/api/order/${orderId}/items`, { items, bills });
+export const updateOrderStatus = ({ orderId, ...data }) =>
+  axiosWrapper.put(`/api/order/${orderId}`, data);
+export const updateItemStatus = ({ orderId, itemId, status }) =>
+  axiosWrapper.put(`/api/order/${orderId}/items/${itemId}`, { status });
 
 // Category Endpoints
 export const addCategory = (data) => axiosWrapper.post("/api/category/add-category", data);
@@ -53,3 +59,8 @@ export const getCashierCutPreview = (cashierId) => axiosWrapper.get(`/api/cash/c
 export const getDailyCutPreview = (params) => axiosWrapper.get("/api/cash/cut/daily-preview", { params });
 export const createCashCut = (data) => axiosWrapper.post("/api/cash/cut", data);
 export const getCashCuts = (params) => axiosWrapper.get("/api/cash/cut", { params });
+
+// Role Management
+export const getRoles = () => axiosWrapper.get("/api/roles");
+export const updateRolePermissions = (data) => axiosWrapper.put(`/api/roles/${data.id}`, data);
+export const resetRoles = () => axiosWrapper.post("/api/roles/reset");

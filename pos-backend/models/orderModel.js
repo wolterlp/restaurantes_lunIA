@@ -19,14 +19,21 @@ const orderSchema = new mongoose.Schema({
     bills: {
         total: { type: Number, required: true },
         tax: { type: Number, required: true },
-        totalWithTax: { type: Number, required: true }
+        totalWithTax: { type: Number, required: true },
+        tip: { type: Number, default: 0 }, // Propina
     },
     items: [{
         dishId: { type: mongoose.Schema.Types.ObjectId }, 
         name: { type: String, required: true },
         pricePerQuantity: { type: Number, required: true },
         quantity: { type: Number, required: true },
-        price: { type: Number, required: true } // Total price for this item line (pricePerQuantity * quantity)
+        price: { type: Number, required: true }, // Total price for this item line (pricePerQuantity * quantity)
+        status: { 
+            type: String, 
+            enum: ["Pending", "In Progress", "Ready", "Served"], 
+            default: "Pending" 
+        },
+        createdAt: { type: Date, default: Date.now }
     }],
     table: { type: mongoose.Schema.Types.ObjectId, ref: "Table" },
     cashier: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Added to track who finalized the order

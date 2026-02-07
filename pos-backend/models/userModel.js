@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     email : {
         type: String,
         required: true,
+        unique: true,
         validate: {
             validator: function (v) {
                 return /\S+@\S+\.\S+/.test(v);
@@ -19,14 +20,23 @@ const userSchema = new mongoose.Schema({
     },
 
     phone: {
-        type : Number,
-        required: true,
+        type : String, // Changed to String to prevent leading zeros issues and consistent format
+        required: false,
+        unique: true,
+        sparse: true,
         validate: {
             validator: function (v) {
-                return /\d{10}/.test(v);
+                if (!v) return true;
+                return /^\d{10}$/.test(v); // Exactly 10 digits
             },
             message : "Phone number must be a 10-digit number!"
         }
+    },
+
+    countryCode: {
+        type: String,
+        required: false,
+        default: "+57" // Default country code
     },
 
     password: {

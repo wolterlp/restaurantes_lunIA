@@ -43,7 +43,7 @@ const Tables = () => {
               status === "all" && "bg-[#383838] rounded-lg px-5 py-2"
             }  rounded-lg px-5 py-2 font-semibold`}
           >
-            All
+            Todas
           </button>
           <button
             onClick={() => setStatus("booked")}
@@ -51,20 +51,22 @@ const Tables = () => {
               status === "booked" && "bg-[#383838] rounded-lg px-5 py-2"
             }  rounded-lg px-5 py-2 font-semibold`}
           >
-            Booked
+            Ocupadas
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-4 px-10 py-6 flex-1 overflow-y-auto pb-24 justify-start content-start">
-        {resData?.data.data.map((table) => {
+        {resData?.data?.data
+          ?.filter((table) => status === "all" || (status === "booked" && table.status === "Booked"))
+          .map((table) => {
           return (
             <TableCard
               key={table._id}
               id={table._id}
               name={table.tableNo}
               status={table.status}
-              initials={table?.currentOrder?.customerDetails.name}
+              initials={table?.currentOrder?.customerDetails?.name || "Sin Nombre"}
               seats={table.seats}
             />
           );

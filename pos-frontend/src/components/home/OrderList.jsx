@@ -14,12 +14,12 @@ const OrderList = ({ order }) => {
           <h1 className="text-[#f5f5f5] text-lg font-semibold tracking-wide">
             {order.customerDetails?.name || "Cliente"}
           </h1>
-          <p className="text-[#ababab] text-sm">{order.items.length} Ítems</p>
+          <p className="text-[#ababab] text-sm">{order.items?.length || 0} Ítems</p>
         </div>
 
         <h1 className="text-[#f6b100] font-semibold border border-[#f6b100] rounded-lg p-1">
           Mesa <FaLongArrowAltRight className="text-[#ababab] ml-2 inline" />{" "}
-          {order.table.tableNo}
+          {order.table?.tableNo || "N/A"}
         </h1>
 
         <div className="flex flex-col items-end gap-2">
@@ -38,7 +38,7 @@ const OrderList = ({ order }) => {
           ) : (
             <>
               <p className="text-yellow-600 bg-[#4a452e] px-2 py-1 rounded-lg">
-                <FaCircle className="inline mr-2" /> {order.orderStatus === "In Progress" ? "En Progreso" : order.orderStatus}
+                <FaCircle className="inline mr-2" /> {order.orderStatus === "In Progress" ? "En Progreso" : "Pendiente"}
               </p>
             </>
           )}

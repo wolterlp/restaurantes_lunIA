@@ -67,7 +67,7 @@ const Auth = () => {
         
         {/* Branding Footer */}
         <div className="absolute bottom-4 right-10 flex items-center gap-2 opacity-50">
-            <span className="text-xs text-gray-400">Powered by</span>
+            <span className="text-xs text-gray-400">Desarrollado por</span>
             <img src={logo} alt="LunIA" className="h-6 w-6" />
             <span className="text-xs font-bold text-gray-400">LunIA</span>
         </div>

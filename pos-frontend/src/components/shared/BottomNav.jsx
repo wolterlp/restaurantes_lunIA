@@ -17,12 +17,41 @@ const BottomNav = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [guestCount, setGuestCount] = useState(0);
   const [name, setName] = useState("");
+  const [countryCode, setCountryCode] = useState("+57");
   const [phone, setPhone] = useState("");
   
-  const { role } = useSelector(state => state.user);
+  const { role, permissions } = useSelector(state => state.user);
+
+  const countryCodes = [
+    { code: "+1", country: "US/CA" },
+    { code: "+52", country: "MX" },
+    { code: "+57", country: "CO" },
+    { code: "+34", country: "ES" },
+    { code: "+54", country: "AR" },
+    { code: "+56", country: "CL" },
+    { code: "+51", country: "PE" },
+    { code: "+593", country: "EC" },
+    { code: "+58", country: "VE" },
+    { code: "+503", country: "SV" },
+    { code: "+502", country: "GT" },
+    { code: "+504", country: "HN" },
+    { code: "+505", country: "NI" },
+    { code: "+506", country: "CR" },
+    { code: "+507", country: "PA" },
+    { code: "+591", country: "BO" },
+    { code: "+595", country: "PY" },
+    { code: "+598", country: "UY" },
+    { code: "+86", country: "CN" },
+    { code: "+91", country: "IN" },
+  ];
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Helper to check permission or role (fallback)
+  const canManageOrders = permissions?.includes("MANAGE_ORDERS") || role === "Waiter" || role === "Admin";
+  const canManageTables = permissions?.includes("MANAGE_ORDERS") || role === "Admin" || role === "Waiter"; // Tables usually go with orders
+  const canSeeMore = role === "Admin" || role === "Cashier"; // Keep this restricted for now unless permission added
 
   const increment = () => {
     if(guestCount >= 6) return;
@@ -41,7 +70,9 @@ const BottomNav = () => {
       return;
     }
     // send the data to store
-    dispatch(setCustomer({name, phone, guests: guestCount}));
+    // Combine country code and phone if phone is provided
+    const fullPhone = phone ? `${countryCode} ${phone}` : "";
+    dispatch(setCustomer({name, phone: fullPhone, guests: guestCount}));
     navigate("/tables");
   }
 
@@ -67,7 +98,7 @@ const BottomNav = () => {
         <MdOutlineReorder className="inline mr-2" size={20} /> <p>Pedidos</p>
       </button>
 
-      {(role === "Admin" || role === "Waiter") && (
+      {(canManageTables) && (
         <button
           onClick={() => navigate("/tables")}
           className={`flex items-center justify-center font-bold ${
@@ -78,7 +109,7 @@ const BottomNav = () => {
         </button>
       )}
 
-      {(role === "Admin" || role === "Cashier") && (
+      {(canSeeMore) && (
         <button
           onClick={() => navigate("/dashboard")}
           className={`flex items-center justify-center font-bold ${
@@ -89,7 +120,7 @@ const BottomNav = () => {
         </button>
       )}
 
-      {(role === "Waiter") && (
+      {(canManageOrders) && (
         <button
             disabled={isActive("/tables") || isActive("/menu")}
             onClick={openModal}
@@ -108,8 +139,34 @@ const BottomNav = () => {
         </div>
         <div>
           <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">Teléfono del Cliente</label>
-          <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} type="number" name="" placeholder="+52-9999999999" id="" className="bg-transparent flex-1 text-white focus:outline-none"  />
+          <div className="flex gap-2">
+            <div className="flex items-center rounded-lg bg-[#1f1f1f] border border-[#383838] w-28">
+                 <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="bg-transparent w-full p-3 text-white outline-none appearance-none text-center cursor-pointer"
+                  >
+                    {countryCodes.map((c) => (
+                        <option key={c.code} value={c.code} className="bg-[#1f1f1f]">
+                            {c.code} {c.country}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] flex-1">
+              <input 
+                value={phone} 
+                onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*$/.test(val)) {
+                        setPhone(val);
+                    }
+                }}
+                type="text" 
+                placeholder="Teléfono (solo números)" 
+                className="bg-transparent flex-1 text-white focus:outline-none"  
+              />
+            </div>
           </div>
         </div>
 

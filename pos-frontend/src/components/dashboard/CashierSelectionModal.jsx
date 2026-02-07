@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { IoMdClose, IoMdPerson } from 'react-icons/io';
 import { useQuery } from '@tanstack/react-query';
-import { getUsers } from '../../https';
+import { getAllUsers } from '../../https';
 
 const CashierSelectionModal = ({ onClose, onSelect }) => {
     // We assume getUsers fetches all users. We might filter for cashiers if roles exist.
     const { data: usersRes } = useQuery({
         queryKey: ["users"],
-        queryFn: getUsers
+        queryFn: getAllUsers
     });
 
     const users = usersRes?.data?.data || [];

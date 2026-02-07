@@ -34,14 +34,14 @@ const Login = () => {
           if (role === "Admin") {
             navigate("/");
           } else if (role === "Waiter") {
-            navigate("/tables");
+            navigate("/orders");
           } else {
             navigate("/orders");
           }
       },
       onError: (error) => {
-        const { response } = error;
-        enqueueSnackbar(response.data.message, { variant: "error" });
+        const message = error.response?.data?.message || "Error al iniciar sesión";
+        enqueueSnackbar(message, { variant: "error" });
       }
     })
 

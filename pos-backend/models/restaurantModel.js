@@ -31,8 +31,10 @@ const restaurantSchema = new mongoose.Schema({
     customization: {
         ticketFooter: { type: String, default: "Gracias por su compra" },
         paymentMethods: [{ type: String }], // ["Efectivo", "Tarjeta"]
-        taxRate: { type: Number, default: 0 },
+        taxRate: { type: Number, default: 16 },
         currencySymbol: { type: String, default: "$" },
+        thousandsSeparator: { type: String, default: "." },
+        decimalSeparator: { type: String, default: "," },
         welcomeMessage: { type: String, default: "Brinda tu mejor servicio a los clientes 😀" }
     },
     // Dispositivos

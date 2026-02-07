@@ -1,5 +1,6 @@
 const createHttpError = require("http-errors");
 const User = require("../models/userModel");
+const Role = require("../models/roleModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
@@ -7,21 +8,52 @@ const config = require("../config/config");
 const register = async (req, res, next) => {
     try {
 
-        const { name, phone, email, password, role } = req.body;
+        const { name, phone, countryCode, email, password, role } = req.body;
 
-        if(!name || !phone || !email || !password || !role){
+        if(!name || !email || !password || !role){
             const error = createHttpError(400, "All fields are required!");
             return next(error);
         }
 
         const isUserPresent = await User.findOne({email});
         if(isUserPresent){
-            const error = createHttpError(400, "User already exist!");
+            const error = createHttpError(400, "Email already exists!");
             return next(error);
         }
 
+        if(phone){
+            if(!/^\d+$/.test(phone) || parseInt(phone) < 0) {
+                 const error = createHttpError(400, "Phone number must contain only positive digits!");
+                 return next(error);
+            }
+            const isPhonePresent = await User.findOne({phone});
+            if(isPhonePresent){
+                const error = createHttpError(400, "Phone number already exists!");
+                return next(error);
+            }
+        }
 
-        const user = { name, phone, email, password, role };
+        // Determine initial status
+        // First user (Admin) created in the system is Active.
+        // Subsequent users are Inactive by default, requiring Admin approval.
+        const adminCount = await User.countDocuments({ role: "Admin" });
+        let initialStatus = "Inactive";
+        if (adminCount === 0 && role === "Admin") {
+            initialStatus = "Active";
+        }
+        
+        // If there are no users at all, the first one must be Active (and likely Admin due to frontend restrictions or logical first step)
+        // But the prompt emphasizes "primera cuenta de administrador".
+        // Let's ensure if it's the very first user, they are Active.
+        const userCount = await User.countDocuments({});
+        if (userCount === 0) {
+             initialStatus = "Active";
+        }
+
+        const user = { name, email, password, role, status: initialStatus };
+        if(phone) user.phone = phone;
+        if(countryCode) user.countryCode = countryCode;
+        
         const newUser = User(user);
         await newUser.save();
 
@@ -52,24 +84,24 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
 
         if(!email || !password) {
-            const error = createHttpError(400, "All fields are required!");
+            const error = createHttpError(400, "Todos los campos son obligatorios");
             return next(error);
         }
 
         const isUserPresent = await User.findOne({email});
         if(!isUserPresent){
-            const error = createHttpError(401, "Invalid Credentials");
+            const error = createHttpError(401, "Credenciales inválidas");
             return next(error);
         }
 
         if(isUserPresent.status === "Inactive"){
-            const error = createHttpError(403, "Your account is inactive. Please contact admin.");
+            const error = createHttpError(403, "Su cuenta está pendiente de validación. Por favor, espere la aprobación del administrador.");
             return next(error);
         }
 
         const isMatch = await bcrypt.compare(password, isUserPresent.password);
         if(!isMatch){
-            const error = createHttpError(401, "Invalid Credentials");
+            const error = createHttpError(401, "Credenciales inválidas");
             return next(error);
         }
 
@@ -84,8 +116,13 @@ const login = async (req, res, next) => {
             secure: true
         })
 
+        // Fetch permissions for the user's role
+        const roleDoc = await Role.findOne({ name: isUserPresent.role });
+        const userData = isUserPresent.toObject();
+        userData.permissions = roleDoc ? roleDoc.permissions : [];
+
         res.status(200).json({success: true, message: "User login successfully!", 
-            data: isUserPresent
+            data: userData
         });
 
 
@@ -99,7 +136,11 @@ const getUserData = async (req, res, next) => {
     try {
         
         const user = await User.findById(req.user._id);
-        res.status(200).json({success: true, data: user});
+        const roleDoc = await Role.findOne({ name: user.role });
+        const userData = user.toObject();
+        userData.permissions = roleDoc ? roleDoc.permissions : [];
+
+        res.status(200).json({success: true, data: userData});
 
     } catch (error) {
         next(error);
@@ -142,7 +183,38 @@ const deleteUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updatedUser = await User.findByIdAndUpdate(id, req.body, { new: true });
+        const { email, phone, countryCode } = req.body;
+        
+        const updateData = { ...req.body };
+
+        if (updateData.password) {
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(updateData.password, salt);
+        }
+
+        if (updateData.phone === "" || updateData.phone === null) {
+            delete updateData.phone;
+            updateData.$unset = { phone: 1 };
+        }
+
+        if (email) {
+            const isEmailPresent = await User.findOne({ email, _id: { $ne: id } });
+            if (isEmailPresent) {
+                return next(createHttpError(400, "Email already exists!"));
+            }
+        }
+
+        if (phone) {
+            if(!/^\d+$/.test(phone) || parseInt(phone) < 0) {
+                 return next(createHttpError(400, "Phone number must contain only positive digits!"));
+            }
+            const isPhonePresent = await User.findOne({ phone, _id: { $ne: id } });
+            if (isPhonePresent) {
+                return next(createHttpError(400, "Phone number already exists!"));
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
         res.status(200).json({ success: true, message: "User updated successfully", data: updatedUser });
     } catch (error) {
         next(error);

@@ -130,7 +130,7 @@ const Modal = ({ activeModal, setActiveModal }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-[#262626] p-6 rounded-lg shadow-lg w-[600px] max-h-[80vh] flex flex-col"
+        className="bg-[#262626] p-6 rounded-lg shadow-lg w-[600px] max-h-[80vh] flex flex-col overflow-hidden"
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[#f5f5f5] text-xl font-semibold">{getTitle()}</h2>
@@ -214,7 +214,8 @@ const Modal = ({ activeModal, setActiveModal }) => {
 
         {/* CREATE/EDIT FORM */}
         {mode !== "list" && (
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <>
+          <form id="modal-form" onSubmit={handleSubmit} className="space-y-4 mt-4 overflow-y-auto flex-1 pr-2">
             {activeModal === "table" && (
               <>
                 <div>
@@ -401,7 +402,8 @@ const Modal = ({ activeModal, setActiveModal }) => {
               </>
             )}
 
-            <div className="flex gap-4 pt-4">
+          </form>
+            <div className="flex gap-4 pt-4 mt-2 border-t border-[#333]">
               <button
                 type="button"
                 onClick={() => setMode("list")}
@@ -411,12 +413,13 @@ const Modal = ({ activeModal, setActiveModal }) => {
               </button>
               <button
                 type="submit"
+                form="modal-form"
                 className="flex-1 bg-[#f6b100] text-[#1f1f1f] py-3 rounded-lg font-bold hover:bg-[#e5a500]"
               >
                 {mode === "create" ? "Agregar" : "Actualizar"}
               </button>
             </div>
-          </form>
+          </>
         )}
       </motion.div>
     </div>

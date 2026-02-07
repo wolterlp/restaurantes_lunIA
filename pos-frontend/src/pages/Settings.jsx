@@ -15,7 +15,7 @@ const Settings = () => {
     backgroundImage: "",
     // Nuevas secciones
     billing: { electronicBilling: false, apiKey: "", endpoint: "" },
-    customization: { ticketFooter: "", paymentMethods: "", taxRate: 0, currencySymbol: "$", welcomeMessage: "" },
+    customization: { ticketFooter: "", paymentMethods: "", taxRate: 0, currencySymbol: "$", thousandsSeparator: ".", decimalSeparator: ",", welcomeMessage: "" },
     devices: { printerName: "", cashDrawerCode: "" }
   });
 
@@ -38,6 +38,8 @@ const Settings = () => {
             paymentMethods: theme.customization?.paymentMethods?.join(", ") || "", 
             taxRate: theme.customization?.taxRate || 0, 
             currencySymbol: theme.customization?.currencySymbol || "$",
+            thousandsSeparator: theme.customization?.thousandsSeparator || ".",
+            decimalSeparator: theme.customization?.decimalSeparator || ",",
             welcomeMessage: theme.customization?.welcomeMessage || "Brinda tu mejor servicio a los clientes 😀"
         },
         devices: { 
@@ -87,6 +89,8 @@ const Settings = () => {
     }));
     enqueueSnackbar("Configuración aplicada para Colombia", { variant: "info" });
   };
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -265,6 +269,13 @@ const Settings = () => {
                     >
                         Aplicar Defaults Colombia
                     </button>
+                    <button 
+                        type="button"
+                        onClick={handleResetUSA}
+                        className="text-xs bg-transparent border border-blue-500 text-blue-500 px-2 py-1 rounded hover:bg-blue-500 hover:text-white transition-colors ml-2"
+                    >
+                        Aplicar Defaults USA
+                    </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2 md:col-span-2">
@@ -286,6 +297,20 @@ const Settings = () => {
                     <div className="flex flex-col gap-2">
                         <label className="text-gray-300 font-semibold">Símbolo de Moneda</label>
                         <input type="text" name="customization.currencySymbol" value={formData.customization.currencySymbol} onChange={handleChange} className="bg-[#1f1f1f] text-white p-3 rounded outline-none border border-[#383838] focus:border-[#ecab0f]" placeholder="$" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-gray-300 font-semibold">Separador de Miles</label>
+                        <select name="customization.thousandsSeparator" value={formData.customization.thousandsSeparator} onChange={handleChange} className="bg-[#1f1f1f] text-white p-3 rounded outline-none border border-[#383838] focus:border-[#ecab0f]">
+                            <option value=".">Punto (.)</option>
+                            <option value=",">Coma (,)</option>
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-gray-300 font-semibold">Separador Decimal</label>
+                        <select name="customization.decimalSeparator" value={formData.customization.decimalSeparator} onChange={handleChange} className="bg-[#1f1f1f] text-white p-3 rounded outline-none border border-[#383838] focus:border-[#ecab0f]">
+                            <option value=",">Coma (,)</option>
+                            <option value=".">Punto (.)</option>
+                        </select>
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-gray-300 font-semibold">Impuesto (%)</label>
@@ -327,7 +352,7 @@ const Settings = () => {
         
         {/* Branding Footer */}
         <div className="text-center mt-8 text-gray-500 text-sm">
-            <p>Powered by <span className="font-bold text-[#ecab0f]">LunIA</span></p>
+            <p>Desarrollado por <span className="font-bold text-[#ecab0f]">LunIA</span></p>
         </div>
       </div>
 

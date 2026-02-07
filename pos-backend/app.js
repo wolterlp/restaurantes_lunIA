@@ -1,4 +1,5 @@
 const express = require("express");
+console.log("Starting app.js...");
 const http = require("http");
 const { Server } = require("socket.io");
 const connectDB = require("./config/database");
@@ -55,6 +56,7 @@ app.use("/api/category", require("./routes/categoryRoute"));
 app.use("/api/metrics", require("./routes/metricsRoute"));
 app.use("/api/restaurant", require("./routes/restaurantRoute"));
 app.use("/api/cash", require("./routes/cashRoute"));
+app.use("/api/roles", require("./routes/roleRoute"));
 
 // Global Error Handler
 app.use(globalErrorHandler);

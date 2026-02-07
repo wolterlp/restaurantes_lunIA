@@ -54,7 +54,7 @@ const RecentOrders = () => {
 
         {/* Order list */}
         <div className="mt-4 px-6 overflow-y-scroll h-[300px] scrollbar-hide">
-          {resData?.data.data.length > 0 ? (
+          {resData?.data?.data?.length > 0 ? (
             resData.data.data.map((order) => {
               return <OrderList key={order._id} order={order} />;
             })

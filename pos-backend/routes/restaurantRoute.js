@@ -1,7 +1,7 @@
 const express = require("express");
 const { getConfig, updateConfig } = require("../controllers/restaurantController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
-const verifyRole = require("../middlewares/roleMiddleware");
+const verifyPermission = require("../middlewares/permissionMiddleware");
 
 const router = express.Router();
 
@@ -9,6 +9,6 @@ const router = express.Router();
 router.get("/config", getConfig);
 
 // Protected route to update config (Admin only)
-router.put("/config", isVerifiedUser, verifyRole("Admin"), updateConfig);
+router.put("/config", isVerifiedUser, verifyPermission("MANAGE_SETTINGS"), updateConfig);
 
 module.exports = router;

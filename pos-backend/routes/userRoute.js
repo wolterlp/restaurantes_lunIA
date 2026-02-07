@@ -2,6 +2,7 @@ const express = require("express");
 const { register, login, getUserData, logout, getAllUsers, deleteUser, updateUser } = require("../controllers/userController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
 const verifyRole = require("../middlewares/roleMiddleware");
+const verifyPermission = require("../middlewares/permissionMiddleware");
 const router = express.Router();
 
 
@@ -13,8 +14,9 @@ router.route("/logout").post(isVerifiedUser, logout)
 router.route("/").get(isVerifiedUser , getUserData);
 
 // Admin User Management Routes
-router.route("/all").get(isVerifiedUser, verifyRole("Admin"), getAllUsers);
-router.route("/:id").delete(isVerifiedUser, verifyRole("Admin"), deleteUser);
-router.route("/:id").put(isVerifiedUser, verifyRole("Admin"), updateUser);
+// Replaced verifyRole("Admin") with verifyPermission("MANAGE_USERS")
+router.route("/all").get(isVerifiedUser, verifyPermission("MANAGE_USERS"), getAllUsers);
+router.route("/:id").delete(isVerifiedUser, verifyPermission("MANAGE_USERS"), deleteUser);
+router.route("/:id").put(isVerifiedUser, verifyPermission("MANAGE_USERS"), updateUser);
 
 module.exports = router;

@@ -9,7 +9,6 @@ import { useMutation } from "@tanstack/react-query";
 import { logout } from "../../https";
 import { removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
-import { MdDashboard } from "react-icons/md";
 import { useTheme } from "../../context/ThemeContext";
 import logoLunia from "../../assets/images/logolunia.png";
 
@@ -39,7 +38,7 @@ const Header = () => {
     if (userData.role === "Admin") {
       navigate("/");
     } else if (userData.role === "Waiter") {
-      navigate("/tables");
+      navigate("/orders");
     } else {
       navigate("/orders");
     }
@@ -77,11 +76,7 @@ const Header = () => {
             <img src={logoLunia} alt="LunIA" className="h-full w-full object-cover" />
         </div>
 
-        {(userData.role === "Admin" || userData.role === "Cashier") && (
-          <div onClick={() => navigate("/dashboard")} className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer hover:bg-[#2a2a2a]" title="Dashboard">
-            <MdDashboard className="text-[#f5f5f5] text-2xl" />
-          </div>
-        )}
+        {/* Notification button removed */}
         
         {userData.role === "Admin" && (
            <div onClick={() => navigate("/users")} className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer hover:bg-[#2a2a2a]" title="Gestión de Usuarios">
@@ -103,7 +98,12 @@ const Header = () => {
               {userData.name || "USUARIO"}
             </h1>
             <p className="text-xs text-[#ababab] font-medium">
-              {userData.role || "Rol"}
+              {userData.role === "Waiter" ? "Mesero/a" : 
+               userData.role === "Cashier" ? "Cajero/a" : 
+               userData.role === "Kitchen" ? "Cocina" : 
+               userData.role === "Delivery" ? "Repartidor/a" : 
+               userData.role === "Admin" ? "Administrador" : 
+               userData.role || "Rol"}
             </p>
           </div>
           <IoLogOut

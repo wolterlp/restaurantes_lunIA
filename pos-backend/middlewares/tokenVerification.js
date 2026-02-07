@@ -10,7 +10,7 @@ const isVerifiedUser = async (req, res, next) => {
         const { accessToken } = req.cookies;
         
         if(!accessToken){
-            const error = createHttpError(401, "Please provide token!");
+            const error = createHttpError(401, "¡Por favor proporcione el token!");
             return next(error);
         }
 
@@ -18,7 +18,7 @@ const isVerifiedUser = async (req, res, next) => {
 
         const user = await User.findById(decodeToken._id);
         if(!user){
-            const error = createHttpError(401, "User not exist!");
+            const error = createHttpError(401, "¡El usuario no existe!");
             return next(error);
         }
 
@@ -26,7 +26,7 @@ const isVerifiedUser = async (req, res, next) => {
         next();
 
     }catch (error) {
-        const err = createHttpError(401, "Invalid Token!");
+        const err = createHttpError(401, "¡Token inválido!");
         next(err);
     }
 }

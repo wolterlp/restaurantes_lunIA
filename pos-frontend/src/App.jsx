@@ -38,7 +38,7 @@ function Layout() {
             </ProtectedRoutes>
           }
         />
-        <Route path="/auth" element={isAuth ? (role === "Admin" ? <Navigate to="/" /> : role === "Waiter" ? <Navigate to="/tables" /> : <Navigate to="/orders" />) : <Auth />} />
+        <Route path="/auth" element={isAuth ? (role === "Admin" ? <Navigate to="/" /> : role === "Waiter" ? <Navigate to="/orders" /> : <Navigate to="/orders" />) : <Auth />} />
         <Route
           path="/orders"
           element={

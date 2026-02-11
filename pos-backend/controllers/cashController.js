@@ -3,6 +3,8 @@ const CashMovement = require("../models/cashMovementModel");
 const CashCut = require("../models/cashCutModel");
 const Order = require("../models/orderModel");
 const User = require("../models/userModel");
+const Restaurant = require("../models/restaurantModel");
+const { getLogicalDateRange, getShiftRangeForDate } = require("../utils/dateUtils");
 
 // --- Cash Movements ---
 
@@ -68,8 +70,18 @@ const getCashierCutPreview = async (req, res, next) => {
             cashier: cashierId 
         }).sort({ cutDate: -1 });
 
-        let startTime = lastCut ? lastCut.cutDate : new Date(new Date().setHours(0,0,0,0));
+        let startTime;
         let endTime = new Date();
+
+        if (lastCut) {
+            startTime = lastCut.cutDate;
+        } else {
+             // Fetch Business Hours for logical start time
+             const config = await Restaurant.findOne();
+             const businessHours = config?.customization?.businessHours;
+             const { start } = getLogicalDateRange(new Date(), businessHours);
+             startTime = start;
+        }
 
         // 1. Fetch Orders for this cashier in range
         // Note: Order model doesn't explicitly store "cashierId" usually, it might use "createdBy" or we assume all orders today.
@@ -131,10 +143,45 @@ const getDailyCutPreview = async (req, res, next) => {
         const { date } = req.query; // YYYY-MM-DD
         const targetDate = date ? new Date(date) : new Date();
         
-        const start = new Date(targetDate);
-        start.setHours(0,0,0,0);
-        const end = new Date(targetDate);
-        end.setHours(23,59,59,999);
+        // Fetch Business Hours
+        const config = await Restaurant.findOne();
+        const businessHours = config?.customization?.businessHours;
+        
+        let start, end;
+        
+        if (date) {
+            // Specific logical date requested
+            // Note: date param "YYYY-MM-DD" usually parses to UTC 00:00.
+            // We assume the user wants the shift starting on that calendar date.
+            // We need to account for timezone offset if the frontend sends local YYYY-MM-DD.
+            // But let's assume the string "YYYY-MM-DD" is the "label" of the day.
+            // We pass this string directly to getShiftRangeForDate which parses it.
+            // However, new Date("2026-02-10") is UTC.
+            // Ideally, we want local time.
+            // If we use "2026-02-10T00:00:00" it might be local.
+            // Let's use the date string directly if valid, or construct it safely.
+            // We'll append "T00:00:00" to ensure local time interpretation if it's just a date string?
+            // Actually, "YYYY-MM-DD" is treated as UTC in ES5.
+            // "YYYY-MM-DDT00:00" is local.
+            // Let's rely on getShiftRangeForDate handling the date object passed.
+            // We will pass the `date` string directly to `getShiftRangeForDate` and let it handle `new Date(dateStr)`.
+            // But wait, `new Date("2026-02-10")` is UTC. 
+            // If I am in -6, that is 18:00 prev day.
+            // I should append T12:00:00 to pick the middle of the day to be safe?
+            // No, `getShiftRangeForDate` expects a base date.
+            // If I pass "2026-02-10T12:00:00", `new Date` makes it Noon Local.
+            // Then `getShiftRangeForDate` sets hours to OpenTime.
+            // This works correctly.
+            const dateStr = date.includes('T') ? date : `${date}T12:00:00`;
+            const range = getShiftRangeForDate(dateStr, businessHours);
+            start = range.start;
+            end = range.end;
+        } else {
+            // Current logical day
+            const range = getLogicalDateRange(new Date(), businessHours);
+            start = range.start;
+            end = range.end;
+        }
 
         const orders = await Order.find({
             updatedAt: { $gte: start, $lte: end },
@@ -192,8 +239,10 @@ const getCashCuts = async (req, res, next) => {
          const { date } = req.query;
          let query = {};
          if(date) {
-             const start = new Date(date); start.setHours(0,0,0,0);
-             const end = new Date(date); end.setHours(23,59,59,999);
+             const config = await Restaurant.findOne();
+             const businessHours = config?.customization?.businessHours;
+             const dateStr = date.includes('T') ? date : `${date}T12:00:00`;
+             const { start, end } = getShiftRangeForDate(dateStr, businessHours);
              query.cutDate = { $gte: start, $lte: end };
          }
          

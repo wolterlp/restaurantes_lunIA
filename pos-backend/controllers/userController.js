@@ -221,4 +221,46 @@ const updateUser = async (req, res, next) => {
     }
 };
 
-module.exports = { register, login, getUserData, logout, getAllUsers, deleteUser, updateUser }
+const verifyAdmin = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            const error = createHttpError(400, "Todos los campos son obligatorios");
+            return next(error);
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            const error = createHttpError(401, "Credenciales inválidas");
+            return next(error);
+        }
+
+        if (user.role !== "Admin") {
+            const error = createHttpError(403, "El usuario no tiene privilegios de administrador");
+            return next(error);
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            const error = createHttpError(401, "Credenciales inválidas");
+            return next(error);
+        }
+
+        res.status(200).json({ success: true, message: "Admin verified", adminId: user._id });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = {
+    register,
+    login,
+    getUserData,
+    logout,
+    getAllUsers,
+    deleteUser,
+    updateUser,
+    verifyAdmin
+};

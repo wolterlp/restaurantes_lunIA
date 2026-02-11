@@ -7,6 +7,7 @@ const config = require("./config/config");
 const globalErrorHandler = require("./middlewares/globalErrorHandler");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const startAutoUpdateService = require("./services/autoUpdateService");
 
 const app = express();
 const server = http.createServer(app);
@@ -42,6 +43,8 @@ app.use(cors({
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())
 
+// Serve static files from uploads directory
+app.use("/uploads", express.static("uploads"));
 
 // Root Endpoint
 app.get("/", (req,res) => {
@@ -57,6 +60,8 @@ app.use("/api/metrics", require("./routes/metricsRoute"));
 app.use("/api/restaurant", require("./routes/restaurantRoute"));
 app.use("/api/cash", require("./routes/cashRoute"));
 app.use("/api/roles", require("./routes/roleRoute"));
+app.use("/api/reports", require("./routes/reportRoute"));
+app.use("/api/upload", require("./routes/uploadRoute"));
 
 // Global Error Handler
 app.use(globalErrorHandler);
@@ -65,4 +70,5 @@ app.use(globalErrorHandler);
 // Server
 server.listen(PORT, () => {
     console.log(`☑️  POS Server is listening on port ${PORT}`);
+    startAutoUpdateService(io);
 })

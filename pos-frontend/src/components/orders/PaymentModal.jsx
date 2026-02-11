@@ -4,6 +4,7 @@ import { updateOrderStatus } from '../../https';
 import { useSnackbar } from 'notistack';
 import { IoClose } from 'react-icons/io5';
 import { useCurrency } from "../../hooks/useCurrency";
+import { getShortId } from "../../utils";
 
 const PaymentModal = ({ order, onClose }) => {
     const { enqueueSnackbar } = useSnackbar();
@@ -15,10 +16,11 @@ const PaymentModal = ({ order, onClose }) => {
     const [transferAmount, setTransferAmount] = useState("");
     const [transferPlatform, setTransferPlatform] = useState("");
     const [isMixedPayment, setIsMixedPayment] = useState(false);
+    const [discount, setDiscount] = useState("");
 
     const totalToPay = order.bills?.totalWithTax || 0; 
     
-    const grandTotal = totalToPay + (order.bills?.tip || 0);
+    const grandTotal = Math.max(0, totalToPay + (order.bills?.tip || 0) - (parseFloat(discount) || 0));
 
     // Calculate change
     const change = paymentMethod === "Cash" && cashReceived 
@@ -99,18 +101,19 @@ const PaymentModal = ({ order, onClose }) => {
             orderId: order._id,
             orderStatus: "Completed",
             paymentMethod,
-            paymentDetails
+            paymentDetails,
+            discount: parseFloat(discount) || 0
         });
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-            <div className="bg-[#1a1a1a] p-6 rounded-lg w-[500px] border border-[#333] relative">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#1a1a1a] p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#333] relative scrollbar-hide">
                 <button onClick={onClose} className="absolute top-4 right-4 text-[#ababab] hover:text-white">
                     <IoClose size={24} />
                 </button>
                 
-                <h2 className="text-[#f5f5f5] text-xl font-bold mb-4">Completar Pago - Mesa {order.table?.tableNo}</h2>
+                <h2 className="text-[#f5f5f5] text-xl font-bold mb-4">Completar Pago - Mesa {order.table?.tableNo} {getShortId(order._id)}</h2>
                 
                 <div className="bg-[#262626] p-4 rounded mb-4">
                     <div className="flex justify-between text-[#ababab] mb-1">

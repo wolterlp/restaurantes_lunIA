@@ -1,5 +1,6 @@
 const createHttpError = require("http-errors");
 const Restaurant = require("../models/restaurantModel");
+const localLicenseService = require('../services/localLicenseService');
 
 // Get configuration (public or protected, but publicly needed for login page)
 const getConfig = async (req, res, next) => {
@@ -9,7 +10,29 @@ const getConfig = async (req, res, next) => {
             // Create default if not exists
             config = await Restaurant.create({});
         }
+        
+        // Optional: Lightweight validation check on load? 
+        // Or trust the DB status until next scheduled check.
+        
         res.status(200).json({ success: true, data: config });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Activate License
+const activateLicense = async (req, res, next) => {
+    try {
+        const { licenseKey } = req.body;
+        if (!licenseKey) throw createHttpError(400, "License Key is required");
+
+        const result = await localLicenseService.activateLicense(licenseKey);
+        
+        if (result.success) {
+            res.status(200).json({ success: true, message: "Licencia activada correctamente", data: result.data });
+        } else {
+            throw createHttpError(400, result.message);
+        }
     } catch (error) {
         next(error);
     }
@@ -37,7 +60,11 @@ const updateConfig = async (req, res, next) => {
             if(customization.paymentMethods !== undefined) config.customization.paymentMethods = customization.paymentMethods;
             if(customization.taxRate !== undefined) config.customization.taxRate = customization.taxRate;
             if(customization.currencySymbol !== undefined) config.customization.currencySymbol = customization.currencySymbol;
+            if(customization.thousandsSeparator !== undefined) config.customization.thousandsSeparator = customization.thousandsSeparator;
+            if(customization.decimalSeparator !== undefined) config.customization.decimalSeparator = customization.decimalSeparator;
             if(customization.welcomeMessage !== undefined) config.customization.welcomeMessage = customization.welcomeMessage;
+            if(customization.orderTimeThresholds !== undefined) config.customization.orderTimeThresholds = customization.orderTimeThresholds;
+            if(customization.businessHours !== undefined) config.customization.businessHours = customization.businessHours;
         }
 
         if(devices) {
@@ -59,4 +86,4 @@ const updateConfig = async (req, res, next) => {
     }
 };
 
-module.exports = { getConfig, updateConfig };
+module.exports = { getConfig, updateConfig, activateLicense };

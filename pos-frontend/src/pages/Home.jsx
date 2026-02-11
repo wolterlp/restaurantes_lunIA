@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDashboardMetrics } from "../https";
 import BottomNav from "../components/shared/BottomNav";
 import Greetings from "../components/home/Greetings";
+import { useTheme } from "../context/ThemeContext";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
 import MiniCard from "../components/home/MiniCard";
@@ -10,9 +11,12 @@ import RecentOrders from "../components/home/RecentOrders";
 import PopularDishes from "../components/home/PopularDishes";
 
 const Home = () => {
+    const { theme } = useTheme();
+    const earningsPeriod = theme?.customization?.earningsPeriod || 'shift';
+
     const { data: metricsRes } = useQuery({
-        queryKey: ["dashboardMetrics"],
-        queryFn: getDashboardMetrics,
+        queryKey: ["dashboardMetrics", earningsPeriod],
+        queryFn: () => getDashboardMetrics(earningsPeriod),
         refetchInterval: 60000, // Refresh every minute
     });
 

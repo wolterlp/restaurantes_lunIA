@@ -67,6 +67,8 @@ const Bill = ({ orderId }) => {
 
     const tempOrderInfo = {
       orderDate: new Date().toISOString(),
+      orderType: customerData.orderType || "Dine-In",
+      deliveryAddress: customerData.deliveryAddress || "",
       customerDetails: {
         name: customerData.customerName || "Cliente",
         phone: customerData.customerPhone || "N/A",
@@ -121,12 +123,20 @@ const Bill = ({ orderId }) => {
         return;
     }
 
-    if (!customerData.table) {
+    if (customerData.orderType === "Dine-In" && !customerData.table) {
       console.log("Error: No table selected");
       enqueueSnackbar("¡Por favor selecciona una mesa primero!", {
         variant: "warning",
       });
       return;
+    }
+
+    if (customerData.orderType === "Delivery" && !customerData.deliveryAddress) {
+        console.log("Error: No delivery address");
+        enqueueSnackbar("¡Por favor ingresa la dirección de entrega!", {
+          variant: "warning",
+        });
+        return;
     }
 
     if (!customerData.customerName) {
@@ -210,6 +220,8 @@ const Bill = ({ orderId }) => {
         phone: customerData.customerPhone,
         guests: customerData.guests,
       },
+      orderType: customerData.orderType || "Dine-In",
+      deliveryAddress: customerData.deliveryAddress || "",
       orderStatus: role === "Waiter" ? "Pending" : "In Progress",
       bills: {
         total: total,
@@ -218,7 +230,7 @@ const Bill = ({ orderId }) => {
         totalWithTax: grandTotal,
       },
       items: cartData,
-      table: customerData.table.tableId,
+      table: customerData.table?.tableId || null,
       paymentMethod: role === "Waiter" ? "Pending" : paymentMethod,
       paymentDetails: paymentDetails, 
     };
@@ -255,22 +267,30 @@ const Bill = ({ orderId }) => {
       };
 
       setOrderInfo(finalOrderInfo);
+      setShowInvoice(true);
 
-      // Update Table
-      const tableData = {
-        status: "Booked",
-        orderId: data._id,
-        tableId: data.table,
-      };
+      // Update Table ONLY if it's Dine-In
+      if (variables.orderType === "Dine-In" && data.table) {
+        const tableData = {
+            status: "Booked",
+            orderId: data._id,
+            tableId: data.table,
+        };
 
-      setTimeout(() => {
-        tableUpdateMutation.mutate(tableData);
-      }, 1500);
+        setTimeout(() => {
+            tableUpdateMutation.mutate(tableData);
+        }, 1500);
+      } else {
+        // For delivery orders, we just clean up after a delay (to show success)
+        setTimeout(() => {
+            dispatch(removeCustomer());
+            dispatch(removeAllItems());
+        }, 1500);
+      }
 
       enqueueSnackbar("¡Pedido Realizado!", {
         variant: "success",
       });
-      setShowInvoice(true);
     },
     onError: (error) => {
       console.log(error);
@@ -296,7 +316,7 @@ const Bill = ({ orderId }) => {
     <>
       <div className="flex items-center justify-between px-5 mt-2">
         <p className="text-xs text-[#ababab] font-medium mt-2">
-          Ítems({cartData.length})
+          Ítems({cartData.length}) {orderId && <span className="ml-2 font-mono text-[#f6b100]">{getShortId(orderId)}</span>}
         </p>
         <h1 className="text-[#f5f5f5] text-md font-bold">
           {formatCurrency(total)}

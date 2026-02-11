@@ -8,6 +8,12 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+/* Fix for date inputs on dark background */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 /* FullScreenLoader.css */
 
 .fullscreen-loader {

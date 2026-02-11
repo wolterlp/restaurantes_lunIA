@@ -5,15 +5,17 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import { Home, Auth, Orders, Tables, Menu, Dashboard, Users, Settings } from "./pages";
+import { Home, Auth, Orders, Tables, Menu, Dashboard, Users, Settings, Reports } from "./pages";
 import Header from "./components/shared/Header";
+import ResponsiveLayout from "./components/shared/ResponsiveLayout";
 import { useSelector } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader"
+import LicenseLock from "./components/shared/LicenseLock";
 import { useEffect } from "react";
 import socket from "./socket";
 import { useSnackbar } from "notistack";
-import logoLunia from "./assets/images/logolunia.png";
+import logoLunia from "./assets/images/branding/logolunia.png";
 import SoundNotifications from "./components/shared/SoundNotifications";
 
 function Layout() {
@@ -27,64 +29,73 @@ function Layout() {
 
   return (
     <>
+      <LicenseLock />
       <SoundNotifications />
       {!hideHeaderRoutes.includes(location.pathname) && <Header />}
       <Routes>
         <Route
           path="/"
           element={
-            <ProtectedRoutes allowedRoles={["Admin"]}>
+            <ResponsiveLayout requiredRole="Admin">
               <Home />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
         <Route path="/auth" element={isAuth ? (role === "Admin" ? <Navigate to="/" /> : role === "Waiter" ? <Navigate to="/orders" /> : <Navigate to="/orders" />) : <Auth />} />
         <Route
           path="/orders"
           element={
-            <ProtectedRoutes allowedRoles={["Admin", "Waiter", "Kitchen", "Cashier"]}>
+            <ResponsiveLayout>
               <Orders />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
         <Route
           path="/tables"
           element={
-            <ProtectedRoutes allowedRoles={["Admin", "Waiter"]}>
+            <ResponsiveLayout>
               <Tables />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
         <Route
           path="/menu"
           element={
-            <ProtectedRoutes allowedRoles={["Admin", "Waiter"]}>
+            <ResponsiveLayout>
               <Menu />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoutes allowedRoles={["Admin", "Cashier"]}>
+            <ResponsiveLayout requiredRole="Cashier">
               <Dashboard />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
          <Route
           path="/users"
           element={
-            <ProtectedRoutes allowedRoles={["Admin"]}>
+            <ResponsiveLayout requiredRole="Admin">
               <Users />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
           }
         />
         <Route
           path="/settings"
           element={
-            <ProtectedRoutes allowedRoles={["Admin"]}>
+            <ResponsiveLayout requiredRole="Admin">
               <Settings />
-            </ProtectedRoutes>
+            </ResponsiveLayout>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ResponsiveLayout requiredRole="Admin">
+              <Reports />
+            </ResponsiveLayout>
           }
         />
         <Route path="*" element={<div>No Encontrado</div>} />
@@ -101,7 +112,8 @@ function ProtectedRoutes({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <div className="text-white text-center mt-20">No tienes permisos para acceder a esta página.</div>;
+    const redirectTo = role === "Admin" ? "/" : "/orders";
+    return <Navigate to={redirectTo} replace />;
   }
 
   return children;

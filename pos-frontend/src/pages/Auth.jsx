@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import restaurant from "../assets/images/restaurant-img.jpg"
-import logo from "../assets/images/logo.png"
+import restaurant from "../assets/images/auth/restaurant-img.jpg"
+import logo from "../assets/images/branding/logo.png"
+import logoLunia from "../assets/images/branding/logolunia.png"
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import { useTheme } from "../context/ThemeContext";
@@ -29,7 +30,7 @@ const Auth = () => {
         <div className="absolute inset-0 bg-black bg-opacity-80"></div>
 
         {/* Quote at bottom */}
-        <blockquote className="absolute bottom-10 px-8 mb-10 text-2xl italic text-white">
+        <blockquote className="absolute bottom-40 px-8 text-2xl italic text-white">
           "Sirve a todos clientes como si fuera tu ser mas preciado, la mejor comida con un servicio rápido, amable y ellos seguirán regresando."
           <br />
           <span className="block mt-4 text-yellow-400" style={{ color: theme?.primaryColor }}>- Fundador de LunIA, Walter López</span>
@@ -66,9 +67,9 @@ const Auth = () => {
         </div>
         
         {/* Branding Footer */}
-        <div className="absolute bottom-4 right-10 flex items-center gap-2 opacity-50">
+        <div className="absolute bottom-2 right-10 flex items-center gap-2 opacity-50">
             <span className="text-xs text-gray-400">Desarrollado por</span>
-            <img src={logo} alt="LunIA" className="h-6 w-6" />
+            <img src={logoLunia} alt="LunIA" className="h-6 w-6 rounded-full" />
             <span className="text-xs font-bold text-gray-400">LunIA</span>
         </div>
 

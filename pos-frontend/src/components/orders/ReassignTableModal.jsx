@@ -56,7 +56,7 @@ const ReassignTableModal = ({ order, onClose }) => {
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#1f1f1f] p-6 rounded-lg shadow-xl w-full max-w-md border border-[#333]"
+        className="bg-[#1f1f1f] p-6 rounded-lg shadow-xl w-full max-w-md border border-[#333] max-h-[90vh] overflow-y-auto scrollbar-hide"
       >
         <h2 className="text-xl font-bold text-[#f5f5f5] mb-4 flex items-center gap-2">
             <FaExchangeAlt className="text-[#f6b100]" /> Reasignar Mesa

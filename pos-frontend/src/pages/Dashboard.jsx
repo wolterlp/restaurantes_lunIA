@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MdTableBar, MdCategory } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
-import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
 import CashCut from "../components/dashboard/CashCut";
 import Modal from "../components/dashboard/Modal";
@@ -13,7 +12,7 @@ const buttons = [
     { label: "Gestionar Platillos", icon: <BiSolidDish />, action: "dishes" },
   ];
 
-  const allTabs = ["Métricas", "Pedidos", "Pagos", "Corte"];
+  const allTabs = ["Pedidos", "Pagos", "Corte"];
 
   const Dashboard = () => {
     const { role } = useSelector((state) => state.user);
@@ -24,7 +23,7 @@ const buttons = [
     }, [])
 
     const [activeModal, setActiveModal] = useState(null);
-    const [activeTab, setActiveTab] = useState(role === "Admin" ? "Métricas" : "Corte");
+    const [activeTab, setActiveTab] = useState(role === "Admin" ? "Pedidos" : "Corte");
 
     const handleOpenModal = (action) => {
     setActiveModal(action);
@@ -67,7 +66,6 @@ const buttons = [
         </div>
       </div>
 
-      {activeTab === "Métricas" && <Metrics />}
       {activeTab === "Pedidos" && <RecentOrders />}
       {activeTab === "Pagos" && 
         <div className="text-white p-6 container mx-auto">

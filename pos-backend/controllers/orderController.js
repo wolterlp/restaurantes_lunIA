@@ -6,9 +6,9 @@ const { default: mongoose } = require("mongoose");
 
 const addOrder = async (req, res, next) => {
   try {
-    // RBAC: Only Waiter can create order
-    if (req.user.role !== "Waiter") {
-        const error = createHttpError(403, "Acceso denegado: ¡Solo los meseros pueden crear pedidos!");
+    // RBAC: Waiter can create any order, Cashier/Admin can create Delivery orders
+    if (req.user.role !== "Waiter" && req.user.role !== "Cashier" && req.user.role !== "Admin") {
+        const error = createHttpError(403, "Acceso denegado: ¡No tienes permisos para crear pedidos!");
         return next(error);
     }
 
@@ -21,6 +21,16 @@ const addOrder = async (req, res, next) => {
             status: "Pending",
             createdAt: new Date()
         }));
+
+        // Single item orders start as In Progress (as per requirement)
+        if (orderData.items.length === 1) {
+            orderData.orderStatus = "In Progress";
+            // Also mark the single item as In Progress? 
+            // The user said "entra de inmediato a 'en progreso2'". 
+            // Usually this refers to Order Status. 
+            // Let's keep items as Pending so Chef can mark Ready.
+            // But if Order is In Progress, it shows in Chef's active view.
+        }
     }
 
     const order = new Order(orderData);
@@ -127,13 +137,19 @@ const addOrderItems = async (req, res, next) => {
 
 const updateItemStatus = async (req, res, next) => {
     try {
-        // RBAC: Only Kitchen or Admin
-        if (req.user.role !== "Kitchen" && req.user.role !== "Admin") {
-             return next(createHttpError(403, "Acceso denegado: ¡Solo el personal de cocina puede actualizar el estado del artículo!"));
-        }
-
         const { orderId, itemId } = req.params;
         const { status } = req.body; // "Pending", "Ready", "Served"
+
+        // RBAC: Only Kitchen or Admin can update to any status. Waiter can only mark as "Served".
+        if (req.user.role !== "Kitchen" && req.user.role !== "Admin") {
+            if (req.user.role === "Waiter") {
+                if (status !== "Served") {
+                    return next(createHttpError(403, "Acceso denegado: ¡Los meseros solo pueden marcar artículos como Servidos!"));
+                }
+            } else {
+                return next(createHttpError(403, "Acceso denegado: ¡Rol no autorizado para actualizar artículos!"));
+            }
+        }
 
         const order = await Order.findById(orderId);
         if (!order) return next(createHttpError(404, "¡Pedido no encontrado!"));
@@ -142,19 +158,40 @@ const updateItemStatus = async (req, res, next) => {
         if (!item) return next(createHttpError(404, "¡Artículo no encontrado!"));
 
         item.status = status;
+        
+        // Update timestamps based on status
+        if (status === "In Progress" && !item.startedAt) {
+            item.startedAt = new Date();
+        }
+        if (status === "Ready" && !item.readyAt) {
+            item.readyAt = new Date();
+        }
+        if (status === "Served" && !item.servedAt) {
+            item.servedAt = new Date();
+        }
 
         // Check if all items are Ready or Served
-        const allReady = order.items.every(i => i.status === "Ready" || i.status === "Served");
+        const totalItems = order.items.length;
+        const readyItems = order.items.filter(i => i.status === "Ready").length;
+        const servedItems = order.items.filter(i => i.status === "Served").length;
+        const inProgressItems = order.items.filter(i => i.status === "In Progress").length;
         
-        if (allReady) {
+        const finishedItems = readyItems + servedItems;
+
+        if (totalItems > 0 && finishedItems === totalItems) {
+            // All items are Ready or Served -> Order is Ready (or Completed/Served if handled elsewhere, but Ready for now)
+            // If all are served, maybe Completed? But usually Cashier completes payment. 
+            // Let's stick to "Ready" so Waiter knows everything is done.
+            // Note: If Waiter serves them one by one, eventually all are Served. 
+            // If all are Served, technically order is still "Ready" for payment or "Delivered" to table?
+            // Existing logic uses "Ready" to mean "Food is ready for table".
             order.orderStatus = "Ready";
+        } else if (finishedItems > 0 || inProgressItems > 0) {
+            // Partial completion or work started
+            order.orderStatus = "In Progress";
         } else {
-            // If at least one item is Ready, we could imply "In Progress" or special status
-            // But if previously Ready and now we added items (Pending), it becomes In Progress
-            // Here we just check for completion
-            if (order.orderStatus === "Pending" && status !== "Pending") {
-                 order.orderStatus = "In Progress";
-            }
+            // Nothing started
+            order.orderStatus = "Pending";
         }
 
         await order.save();
@@ -192,7 +229,7 @@ const getOrderById = async (req, res, next) => {
 const getOrders = async (req, res, next) => {
   try {
     const { limit } = req.query;
-    let query = Order.find().populate("table").sort({ createdAt: -1 });
+    let query = Order.find().populate("table").populate("cancelledBy", "name").sort({ createdAt: -1 });
     
     if (limit) {
         query = query.limit(parseInt(limit));
@@ -207,15 +244,20 @@ const getOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
   try {
-    const { orderStatus, paymentMethod, paymentDetails } = req.body;
+    const { orderStatus, paymentMethod, paymentDetails, cancellationReason, discount } = req.body;
     const { id } = req.params;
     const { role } = req.user;
 
     // RBAC Logic
     if (orderStatus) {
         if (orderStatus === "Completed") {
-            if (role !== "Cashier") {
-                const error = createHttpError(403, "Acceso denegado: ¡Solo el cajero puede completar el pago!");
+            if (role !== "Cashier" && role !== "Admin") {
+                const error = createHttpError(403, "Acceso denegado: ¡Solo el cajero o administrador puede completar el pago!");
+                return next(error);
+            }
+        } else if (orderStatus === "Cancelled") {
+            if (role !== "Admin" && role !== "Cashier") {
+                const error = createHttpError(403, "Acceso denegado: ¡Solo el administrador o cajero pueden anular pedidos!");
                 return next(error);
             }
         } else {
@@ -238,8 +280,17 @@ const updateOrder = async (req, res, next) => {
     if (paymentMethod) updateData.paymentMethod = paymentMethod;
     if (paymentDetails) updateData.paymentDetails = paymentDetails;
     
-    if (orderStatus === "Completed" && role === "Cashier") {
+    if (orderStatus === "Completed" && (role === "Cashier" || role === "Admin")) {
         updateData.cashier = req.user._id;
+    }
+
+    if (orderStatus === "Cancelled") {
+        updateData.cancelledBy = req.body.cancelledBy || req.user._id;
+        if (cancellationReason) updateData.cancellationReason = cancellationReason;
+    }
+
+    if (discount !== undefined) {
+        updateData["bills.discount"] = discount;
     }
 
     const order = await Order.findByIdAndUpdate(
@@ -253,7 +304,7 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
-    if (orderStatus === "Completed" && order.table) {
+    if ((orderStatus === "Completed" || orderStatus === "Cancelled") && order.table) {
       await Table.findByIdAndUpdate(order.table, {
         status: "Available",
         currentOrder: null,
@@ -282,47 +333,79 @@ const reassignTable = async (req, res, next) => {
         const order = await Order.findById(id);
         if (!order) return next(createHttpError(404, "¡Pedido no encontrado!"));
 
-        // RBAC: Only Waiter or Admin
-        if (req.user.role !== "Waiter" && req.user.role !== "Admin") {
-            return next(createHttpError(403, "Acceso denegado"));
-        }
-
         const oldTableId = order.table;
-        const newTable = await Table.findById(newTableId);
         
-        if (!newTable) return next(createHttpError(404, "¡Nueva mesa no encontrada!"));
-        if (newTable.status !== "Available") return next(createHttpError(400, "La nueva mesa no está disponible"));
-
-        // Update Old Table
-        if (oldTableId) {
-            await Table.findByIdAndUpdate(oldTableId, { 
-                status: "Available", 
-                $unset: { currentOrder: 1 } 
-            });
-        }
-
-        // Update New Table
-        newTable.status = "Booked";
-        newTable.currentOrder = order._id;
-        await newTable.save();
+        // Validate new table
+        const newTable = await Table.findById(newTableId);
+        if (!newTable) return next(createHttpError(404, "¡Mesa no encontrada!"));
+        if (newTable.status !== "Available") return next(createHttpError(400, "¡La nueva mesa está ocupada!"));
 
         // Update Order
         order.table = newTableId;
         await order.save();
 
-        // Populate table details for frontend
-        await order.populate("table");
+        // Update Old Table
+        if (oldTableId) {
+            await Table.findByIdAndUpdate(oldTableId, { status: "Available", currentOrder: null });
+        }
 
-        // Emit events
+        // Update New Table
+        newTable.status = "Occupied";
+        newTable.currentOrder = order._id;
+        await newTable.save();
+
         const io = req.app.get("io");
-        io.emit("table-update"); 
+        io.emit("table-update");
         io.emit("order-update", order);
 
         res.status(200).json({ success: true, message: "Mesa reasignada con éxito", data: order });
-
     } catch (error) {
         next(error);
     }
 };
 
-module.exports = { addOrder, addOrderItems, getOrderById, getOrders, updateOrder, updateItemStatus, reassignTable };
+const serveAllReadyItems = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        // RBAC: Only Waiter (and Admin) should serve items
+        if (req.user.role !== "Waiter" && req.user.role !== "Admin") {
+            return next(createHttpError(403, "Acceso denegado: ¡Solo los meseros pueden servir platos!"));
+        }
+
+        const order = await Order.findById(id);
+        if (!order) return next(createHttpError(404, "¡Pedido no encontrado!"));
+
+        let updatedCount = 0;
+        
+        order.items.forEach(item => {
+            if (item.status === "Ready") {
+                item.status = "Served";
+                item.servedAt = new Date();
+                updatedCount++;
+            }
+        });
+
+        if (updatedCount > 0) {
+            await order.save();
+            const io = req.app.get("io");
+            io.emit("order-update", order);
+        }
+
+        res.status(200).json({ success: true, message: "Platos actualizados", updatedCount });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = {
+  addOrder,
+  addOrderItems,
+  getOrders,
+  getOrderById,
+  updateOrder,
+  updateItemStatus,
+  reassignTable,
+  serveAllReadyItems
+};
+

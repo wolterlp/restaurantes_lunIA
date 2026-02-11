@@ -4,6 +4,7 @@ const itemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   stock: { type: Number, default: 0 },
+  prepTime: { type: Number, default: 15 }, // Estimated preparation time in minutes
   image: { type: String }, // URL or path to image
 });
 

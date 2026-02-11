@@ -5,6 +5,7 @@ export { axiosWrapper };
 
 // Auth Endpoints
 export const login = (data) => axiosWrapper.post("/api/user/login", data);
+export const verifyAdmin = (data) => axiosWrapper.post("/api/user/verify-admin", data);
 export const register = (data) => axiosWrapper.post("/api/user/register", data);
 export const getUserData = () => axiosWrapper.get("/api/user");
 export const logout = () => axiosWrapper.post("/api/user/logout");
@@ -31,6 +32,8 @@ export const updateOrderStatus = ({ orderId, ...data }) =>
   axiosWrapper.put(`/api/order/${orderId}`, data);
 export const updateItemStatus = ({ orderId, itemId, status }) =>
   axiosWrapper.put(`/api/order/${orderId}/items/${itemId}`, { status });
+export const serveAllReadyItems = (orderId) =>
+    axiosWrapper.put(`/api/order/${orderId}/serve-all`);
 
 // Category Endpoints
 export const addCategory = (data) => axiosWrapper.post("/api/category/add-category", data);
@@ -44,7 +47,7 @@ export const deleteDish = (data) => axiosWrapper.post("/api/category/delete-dish
 export const getAllCategories = () => axiosWrapper.get("/api/category/get-all");
 
 // Metrics Endpoints
-export const getDashboardMetrics = () => axiosWrapper.get("/api/metrics");
+export const getDashboardMetrics = (period = 'daily') => axiosWrapper.get(`/api/metrics?period=${period}`);
 export const getCashCutMetrics = () => axiosWrapper.get("/api/metrics/cash-cut");
 export const getPopularDishes = (params) => axiosWrapper.get("/api/metrics/popular", { params });
 
@@ -60,7 +63,33 @@ export const getDailyCutPreview = (params) => axiosWrapper.get("/api/cash/cut/da
 export const createCashCut = (data) => axiosWrapper.post("/api/cash/cut", data);
 export const getCashCuts = (params) => axiosWrapper.get("/api/cash/cut", { params });
 
+// Report Endpoints
+export const getPerformanceStats = (dateRange, comparisonDateRange = null) => {
+  const params = { ...dateRange };
+  if (comparisonDateRange) {
+    params.comparisonStartDate = comparisonDateRange.startDate;
+    params.comparisonEndDate = comparisonDateRange.endDate;
+  }
+  return axiosWrapper.get("/api/reports/performance", { params });
+};
+
+export const getEconomicStats = (dateRange, comparisonDateRange = null) => {
+  const params = { ...dateRange };
+  if (comparisonDateRange) {
+    params.comparisonStartDate = comparisonDateRange.startDate;
+    params.comparisonEndDate = comparisonDateRange.endDate;
+  }
+  return axiosWrapper.get("/api/reports/economic", { params });
+};
+
 // Role Management
 export const getRoles = () => axiosWrapper.get("/api/roles");
 export const updateRolePermissions = (data) => axiosWrapper.put(`/api/roles/${data.id}`, data);
 export const resetRoles = () => axiosWrapper.post("/api/roles/reset");
+
+// File Upload
+export const uploadImage = (formData) => axiosWrapper.post("/api/upload", formData, {
+    headers: {
+        "Content-Type": "multipart/form-data"
+    }
+});

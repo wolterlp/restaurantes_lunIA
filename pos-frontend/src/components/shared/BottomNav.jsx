@@ -19,6 +19,8 @@ const BottomNav = () => {
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+57");
   const [phone, setPhone] = useState("");
+  const [orderType, setOrderType] = useState("Dine-In");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   
   const { role, permissions } = useSelector(state => state.user);
 
@@ -69,21 +71,46 @@ const BottomNav = () => {
       enqueueSnackbar("¡Por favor ingrese el nombre del cliente!", { variant: "warning" });
       return;
     }
+
+    if (orderType === "Delivery" && !deliveryAddress) {
+      enqueueSnackbar("¡Por favor ingrese la dirección de entrega!", { variant: "warning" });
+      return;
+    }
+
     // send the data to store
     // Combine country code and phone if phone is provided
     const fullPhone = phone ? `${countryCode} ${phone}` : "";
-    dispatch(setCustomer({name, phone: fullPhone, guests: guestCount}));
-    navigate("/tables");
+    dispatch(setCustomer({
+      name, 
+      phone: fullPhone, 
+      guests: orderType === "Dine-In" ? guestCount : 0,
+      orderType,
+      deliveryAddress: orderType === "Delivery" ? deliveryAddress : ""
+    }));
+
+    if (orderType === "Delivery") {
+      navigate("/menu");
+    } else {
+      navigate("/tables");
+    }
+    
+    // Reset fields
+    setName("");
+    setPhone("");
+    setGuestCount(0);
+    setDeliveryAddress("");
+    setOrderType("Dine-In");
+    closeModal();
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#262626] h-16 flex items-center justify-between gap-2 px-2 sm:px-4">
       {(role === "Admin") && (
         <button
           onClick={() => navigate("/")}
-          className={`flex items-center justify-center font-bold ${
+          className={`flex items-center justify-center font-semibold ${
             isActive("/") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-          } w-[300px] rounded-[20px]`}
+          } flex-1 min-w-[90px] rounded-[20px] py-2 px-3 text-sm sm:text-base`}
         >
           <FaHome className="inline mr-2" size={20} /> <p>Inicio</p>
         </button>
@@ -91,9 +118,9 @@ const BottomNav = () => {
       
       <button
         onClick={() => navigate("/orders")}
-        className={`flex items-center justify-center font-bold ${
+        className={`flex items-center justify-center font-semibold ${
           isActive("/orders") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-        } w-[300px] rounded-[20px]`}
+        } flex-1 min-w-[90px] rounded-[20px] py-2 px-3 text-sm sm:text-base`}
       >
         <MdOutlineReorder className="inline mr-2" size={20} /> <p>Pedidos</p>
       </button>
@@ -101,22 +128,11 @@ const BottomNav = () => {
       {(canManageTables) && (
         <button
           onClick={() => navigate("/tables")}
-          className={`flex items-center justify-center font-bold ${
+          className={`flex items-center justify-center font-semibold ${
             isActive("/tables") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-          } w-[300px] rounded-[20px]`}
+          } flex-1 min-w-[90px] rounded-[20px] py-2 px-3 text-sm sm:text-base`}
         >
           <MdTableBar className="inline mr-2" size={20} /> <p>Mesas</p>
-        </button>
-      )}
-
-      {(canSeeMore) && (
-        <button
-          onClick={() => navigate("/dashboard")}
-          className={`flex items-center justify-center font-bold ${
-            isActive("/dashboard") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-          } w-[300px] rounded-[20px]`}
-        >
-          <CiCircleMore className="inline mr-2" size={20} /> <p>Más</p>
         </button>
       )}
 
@@ -124,13 +140,28 @@ const BottomNav = () => {
         <button
             disabled={isActive("/tables") || isActive("/menu")}
             onClick={openModal}
-            className="absolute bottom-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-4 items-center"
+            className="absolute bottom-12 bg-[#F6B100] text-[#1f1f1f] rounded-full p-3 items-center shadow-md left-1/2 -translate-x-1/2"
         >
-            <BiSolidDish size={40} />
+            <BiSolidDish size={28} className="sm:size-[32px]" />
         </button>
       )}
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Crear Pedido">
+        <div className="flex gap-2 mb-4 bg-[#1f1f1f] p-1 rounded-lg">
+          <button 
+            onClick={() => setOrderType("Dine-In")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Dine-In" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Para Mesa
+          </button>
+          <button 
+            onClick={() => setOrderType("Delivery")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Delivery" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Domicilio
+          </button>
+        </div>
+
         <div>
           <label className="block text-[#ababab] mb-2 text-sm font-medium">Nombre del Cliente</label>
           <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
@@ -170,16 +201,30 @@ const BottomNav = () => {
           </div>
         </div>
 
-        <div>
-          <label className="block mb-2 mt-3 text-sm font-medium text-[#ababab]">Invitados</label>
-          <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg">
-            <button onClick={decrement} className="text-yellow-500 text-2xl">&minus;</button>
-            <span className="text-white">{guestCount} Persona(s)</span>
-            <button onClick={increment} className="text-yellow-500 text-2xl">&#43;</button>
+        {orderType === "Dine-In" ? (
+          <div>
+            <label className="block mb-2 mt-3 text-sm font-medium text-[#ababab]">Invitados</label>
+            <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg">
+              <button onClick={decrement} className="text-yellow-500 text-2xl">&minus;</button>
+              <span className="text-white">{guestCount} Persona(s)</span>
+              <button onClick={increment} className="text-yellow-500 text-2xl">&#43;</button>
+            </div>
           </div>
-        </div>
-        <button onClick={handleCreateOrder} className="w-full bg-[#F6B100] text-[#f5f5f5] rounded-lg py-3 mt-8 hover:bg-yellow-700">
-          Crear Pedido
+        ) : (
+          <div>
+            <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">Dirección de Entrega</label>
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+              <textarea 
+                value={deliveryAddress} 
+                onChange={(e) => setDeliveryAddress(e.target.value)} 
+                placeholder="Ingrese la dirección completa..." 
+                className="bg-transparent flex-1 text-white focus:outline-none resize-none h-20"
+              />
+            </div>
+          </div>
+        )}
+        <button onClick={handleCreateOrder} className="w-full bg-[#F6B100] text-[#f5f5f5] rounded-lg py-3 mt-8 hover:bg-yellow-700 font-bold uppercase tracking-wider">
+          {orderType === "Dine-In" ? "Continuar a Mesas" : "Continuar al Menú"}
         </button>
       </Modal>
     </div>

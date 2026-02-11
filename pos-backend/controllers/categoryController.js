@@ -13,12 +13,12 @@ const addCategory = async (req, res) => {
 
 const addDish = async (req, res) => {
   try {
-    const { categoryId, name, price } = req.body;
+    const { categoryId, name, price, prepTime } = req.body;
     const category = await Category.findById(categoryId);
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
     }
-    category.items.push({ name, price });
+    category.items.push({ name, price, prepTime: prepTime || 15 });
     await category.save();
     res.status(200).json({ message: "Dish added successfully", data: category });
   } catch (error) {
@@ -68,7 +68,7 @@ const deleteCategory = async (req, res) => {
 
 const updateDish = async (req, res) => {
   try {
-    const { categoryId, dishId, name, price, stock } = req.body;
+    const { categoryId, dishId, name, price, stock, prepTime } = req.body;
     const category = await Category.findOneAndUpdate(
       { _id: categoryId, "items._id": dishId },
       {
@@ -76,6 +76,7 @@ const updateDish = async (req, res) => {
           "items.$.name": name,
           "items.$.price": price,
           "items.$.stock": stock,
+          "items.$.prepTime": prepTime,
         },
       },
       { new: true }

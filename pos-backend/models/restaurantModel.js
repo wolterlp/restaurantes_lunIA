@@ -35,7 +35,34 @@ const restaurantSchema = new mongoose.Schema({
         currencySymbol: { type: String, default: "$" },
         thousandsSeparator: { type: String, default: "." },
         decimalSeparator: { type: String, default: "," },
-        welcomeMessage: { type: String, default: "Brinda tu mejor servicio a los clientes 😀" }
+        welcomeMessage: { type: String, default: "Brinda tu mejor servicio a los clientes 😀" },
+        // Tiempos de espera para semáforo de pedidos (en minutos)
+        orderTimeThresholds: {
+            green: { type: Number, default: 15 },
+            orange: { type: Number, default: 30 },
+            red: { type: Number, default: 45 }
+        },
+        // Horario Laboral (para cortes y reportes)
+        businessHours: {
+            openTime: { type: String, default: "02:00" }, // Formato HH:mm
+            closeTime: { type: String, default: "23:59" } // Formato HH:mm
+        },
+        // Período de visualización de ganancias
+        earningsPeriod: { 
+            type: String, 
+            default: "shift",
+            enum: ["daily", "shift", "weekly", "monthly", "yearly", "all"] 
+        }
+    },
+    // Licenciamiento
+    license: {
+        key: { type: String, default: "" },
+        status: { type: String, enum: ["active", "suspended", "expired", "invalid", "none"], default: "none" },
+        expirationDate: { type: Date },
+        lastValidation: { type: Date },
+        maxOfflineHours: { type: Number, default: 72 }, // Policy from server
+        localSignature: { type: String }, // Integrity check
+        features: [{ type: String }] // Para futuros flags de features
     },
     // Dispositivos
     devices: {

@@ -52,7 +52,7 @@ const Login = () => {
           <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
             Correo del Empleado
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#262626] border border-gray-700 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
             <input
               type="email"
               name="email"
@@ -68,7 +68,7 @@ const Login = () => {
           <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
             Contraseña
           </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#262626] border border-gray-700 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
             <input
               type="password"
               name="password"

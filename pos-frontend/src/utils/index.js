@@ -45,3 +45,8 @@ export const formatDateAndTime = (date) => {
 
   return dateAndTime;
 }
+
+export const getShortId = (id) => {
+  if (!id) return "";
+  return "#" + id.slice(-4);
+};

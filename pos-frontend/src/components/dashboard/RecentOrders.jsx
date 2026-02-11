@@ -4,7 +4,7 @@ import { GrUpdate } from "react-icons/gr";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { getOrders, updateOrderStatus } from "../../https/index";
-import { formatDateAndTime } from "../../utils";
+import { formatDateAndTime, getShortId } from "../../utils";
 
 const RecentOrders = () => {
   const queryClient = useQueryClient();
@@ -66,35 +66,41 @@ const RecentOrders = () => {
             </tr>
           </thead>
           <tbody>
-            {resData?.data?.data?.map((order, index) => (
+            {sortedOrders?.map((order, index) => (
               <tr
                 key={index}
                 className="border-b border-gray-600 hover:bg-[#333]"
               >
-                <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td>
+                <td className="p-4">{getShortId(order._id)}</td>
                 <td className="p-4">{order.customerDetails?.name || "N/A"}</td>
                 <td className="p-4">
-                  <select
-                    className={`bg-[#1a1a1a] border border-gray-500 p-2 rounded-lg focus:outline-none ${
-                      order.orderStatus === "Ready"
-                        ? "text-green-500"
-                        : order.orderStatus === "Completed"
-                        ? "text-blue-500"
-                        : "text-yellow-500"
-                    }`}
-                    value={order.orderStatus}
-                    onChange={(e) => handleStatusChange({orderId: order._id, orderStatus: e.target.value})}
-                  >
-                    <option className="text-yellow-500" value="In Progress">
-                      En Progreso
-                    </option>
-                    <option className="text-green-500" value="Ready">
-                      Listo
-                    </option>
-                    <option className="text-blue-500" value="Completed">
-                      Completado
-                    </option>
-                  </select>
+                  {order.orderStatus === "Cancelled" ? (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#3a1c1c] text-red-500 border border-red-900">
+                      Anulado
+                    </span>
+                  ) : (
+                    <select
+                      className={`bg-[#1a1a1a] border border-gray-500 p-2 rounded-lg focus:outline-none ${
+                        order.orderStatus === "Ready"
+                          ? "text-green-500"
+                          : order.orderStatus === "Completed"
+                          ? "text-blue-500"
+                          : "text-yellow-500"
+                      }`}
+                      value={order.orderStatus}
+                      onChange={(e) => handleStatusChange({orderId: order._id, orderStatus: e.target.value})}
+                    >
+                      <option className="text-yellow-500" value="In Progress">
+                        En Progreso
+                      </option>
+                      <option className="text-green-500" value="Ready">
+                        Listo
+                      </option>
+                      <option className="text-blue-500" value="Completed">
+                        Completado
+                      </option>
+                    </select>
+                  )}
                 </td>
                 <td className="p-4">{formatDateAndTime(order.orderDate)}</td>
                 <td className="p-4">{order.items?.length || 0} Ítems</td>

@@ -15,6 +15,8 @@ const CustomerInfo = () => {
   const [phone, setPhone] = useState("");
   const [countryCode, setCountryCode] = useState("+57");
   const [guests, setGuests] = useState(1);
+  const [orderType, setOrderType] = useState("Dine-In");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
 
   const countryCodes = [
     { code: "+1", country: "US/CA" },
@@ -43,6 +45,8 @@ const CustomerInfo = () => {
       setName(customerData.customerName || "");
       setPhone(customerData.customerPhone || "");
       setGuests(customerData.guests || 1);
+      setOrderType(customerData.orderType || "Dine-In");
+      setDeliveryAddress(customerData.deliveryAddress || "");
       setIsModalOpen(true);
   };
 
@@ -51,10 +55,16 @@ const CustomerInfo = () => {
           enqueueSnackbar("El nombre es requerido", { variant: "warning" });
           return;
       }
+      if (orderType === "Delivery" && !deliveryAddress.trim()) {
+          enqueueSnackbar("La dirección de entrega es requerida", { variant: "warning" });
+          return;
+      }
       dispatch(setCustomer({
           name,
           phone: phone ? `${countryCode} ${phone}` : "",
-          guests
+          guests: orderType === "Dine-In" ? guests : 0,
+          orderType,
+          deliveryAddress: orderType === "Delivery" ? deliveryAddress : ""
       }));
       setIsModalOpen(false);
       enqueueSnackbar("Información del cliente actualizada", { variant: "success" });
@@ -68,7 +78,7 @@ const CustomerInfo = () => {
           {customerData.customerName || "Nombre del Cliente"}
         </h1>
         <p className="text-xs text-[#ababab] font-medium">
-          #{customerData.orderId || "N/A"} / Comer aquí
+          #{customerData.orderId || "N/A"} / {customerData.orderType === "Delivery" ? "Domicilio" : "Comer aquí"}
         </p>
         <p className="text-xs text-[#ababab] font-medium">
           {formatDate(dateTime)}
@@ -84,6 +94,21 @@ const CustomerInfo = () => {
     </div>
 
     <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Información del Cliente">
+        <div className="flex gap-2 mb-4 bg-[#1f1f1f] p-1 rounded-lg">
+          <button 
+            onClick={() => setOrderType("Dine-In")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Dine-In" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Para Mesa
+          </button>
+          <button 
+            onClick={() => setOrderType("Delivery")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Delivery" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Domicilio
+          </button>
+        </div>
+
         <div className="space-y-4">
             <div>
                 <label className="block text-[#ababab] mb-2 text-sm font-medium">Nombre del Cliente</label>
@@ -97,64 +122,67 @@ const CustomerInfo = () => {
                     />
                 </div>
             </div>
+            
+            {orderType === "Dine-In" && (
+                <div>
+                    <label className="block text-[#ababab] mb-2 text-sm font-medium">Invitados</label>
+                    <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg border border-[#383838]">
+                        <button onClick={() => setGuests(Math.max(1, guests - 1))} className="text-yellow-500 text-2xl font-bold">&minus;</button>
+                        <span className="text-white font-medium">{guests} Persona(s)</span>
+                        <button onClick={() => setGuests(Math.min(20, guests + 1))} className="text-yellow-500 text-2xl font-bold">&#43;</button>
+                    </div>
+                </div>
+            )}
+
+            {orderType === "Delivery" && (
+                <div>
+                    <label className="block text-[#ababab] mb-2 text-sm font-medium">Dirección de Entrega</label>
+                    <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#383838]">
+                        <textarea 
+                            value={deliveryAddress} 
+                            onChange={(e) => setDeliveryAddress(e.target.value)} 
+                            placeholder="Ingrese la dirección completa..." 
+                            className="bg-transparent flex-1 text-white focus:outline-none resize-none h-20"
+                        />
+                    </div>
+                </div>
+            )}
 
             <div>
-                <label className="block text-[#ababab] mb-2 text-sm font-medium">Teléfono</label>
+                <label className="block text-[#ababab] mb-2 text-sm font-medium">Teléfono del Cliente</label>
                 <div className="flex gap-2">
-                    <div className="flex items-center rounded-lg bg-[#1f1f1f] border border-[#383838] w-28">
+                    <div className="flex items-center rounded-lg bg-[#1f1f1f] border border-[#383838] w-24">
                         <select
                             value={countryCode}
                             onChange={(e) => setCountryCode(e.target.value)}
-                            className="bg-transparent w-full p-3 text-white outline-none appearance-none text-center cursor-pointer"
+                            className="bg-transparent w-full p-2 text-white outline-none appearance-none text-center cursor-pointer text-sm"
                         >
                             {countryCodes.map((c) => (
                                 <option key={c.code} value={c.code} className="bg-[#1f1f1f]">
-                                    {c.code} {c.country}
+                                    {c.code}
                                 </option>
                             ))}
                         </select>
                     </div>
                     <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#383838] flex-1">
                         <input 
-                            value={phone} 
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (/^\d*$/.test(val)) setPhone(val);
-                            }}
+                            value={phone.replace(countryCode, "").trim()} 
+                            onChange={(e) => setPhone(e.target.value)} 
                             type="text" 
-                            placeholder="Número de teléfono" 
+                            placeholder="Teléfono" 
                             className="bg-transparent flex-1 text-white focus:outline-none"  
                         />
                     </div>
                 </div>
             </div>
-
-            <div>
-                <label className="block text-[#ababab] mb-2 text-sm font-medium">Invitados</label>
-                <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg border border-[#383838]">
-                    <button 
-                        onClick={() => setGuests(prev => Math.max(1, prev - 1))} 
-                        className="text-[#f6b100] text-2xl font-bold w-8 h-8 flex items-center justify-center hover:bg-[#333] rounded"
-                    >
-                        &minus;
-                    </button>
-                    <span className="text-white font-medium">{guests} Persona(s)</span>
-                    <button 
-                        onClick={() => setGuests(prev => prev + 1)} 
-                        className="text-[#f6b100] text-2xl font-bold w-8 h-8 flex items-center justify-center hover:bg-[#333] rounded"
-                    >
-                        &#43;
-                    </button>
-                </div>
-            </div>
-
-            <button 
-                onClick={handleSaveCustomer} 
-                className="w-full bg-[#f6b100] text-[#1f1f1f] rounded-lg py-3 mt-4 font-bold hover:brightness-110 transition-all"
-            >
-                Guardar Información
-            </button>
         </div>
+
+        <button 
+            onClick={handleSaveCustomer}
+            className="w-full bg-[#F6B100] text-[#1f1f1f] font-bold rounded-lg py-3 mt-8 hover:brightness-110 transition-all uppercase tracking-wider"
+        >
+            Guardar Cambios
+        </button>
     </Modal>
     </>
   );

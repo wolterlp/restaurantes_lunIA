@@ -92,7 +92,7 @@ const Register = ({setIsRegister}) => {
           <label className="block text-gray-300 mb-2 text-sm font-bold">
             Nombre del Empleado
           </label>
-          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#262626] border border-gray-700 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
             <input
               type="text"
               name="name"
@@ -108,7 +108,7 @@ const Register = ({setIsRegister}) => {
           <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Correo del Empleado
           </label>
-          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#262626] border border-gray-700 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
             <input
               type="email"
               name="email"
@@ -125,7 +125,7 @@ const Register = ({setIsRegister}) => {
             Teléfono del Empleado
           </label>
           <div className="flex gap-2">
-            <div className="flex items-center rounded-lg bg-[#1f1f1f] border border-[#383838] w-28">
+            <div className="flex items-center rounded-lg bg-[#262626] border border-gray-700 w-28 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
                  <select
                     name="countryCode"
                     value={formData.countryCode}
@@ -139,7 +139,7 @@ const Register = ({setIsRegister}) => {
                     ))}
                 </select>
             </div>
-            <div className="flex items-center rounded-lg p-4 bg-[#1f1f1f] border border-[#383838] flex-1">
+            <div className="flex items-center rounded-lg p-4 bg-[#262626] border border-gray-700 flex-1 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
                 <input
                   type="text"
                   name="phone"
@@ -161,7 +161,7 @@ const Register = ({setIsRegister}) => {
           <label className="block text-gray-300 mb-2 mt-3 text-sm font-bold">
             Contraseña
           </label>
-          <div className="flex items-center rounded-lg p-5 px-4 bg-[#1f1f1f] border border-[#383838]">
+          <div className="flex items-center rounded-lg p-5 px-4 bg-[#262626] border border-gray-700 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 transition-all">
             <input
               type="password"
               name="password"
@@ -191,8 +191,8 @@ const Register = ({setIsRegister}) => {
                   key={roleObj.value}
                   type="button"
                   onClick={() => handleRoleSelection(roleObj.value)}
-                  className={`flex flex-col items-center justify-center gap-2 bg-[#1f1f1f] px-4 py-3 w-full sm:w-auto flex-1 rounded-lg text-[#ababab] hover:bg-[#2c2c2c] transition-colors ${
-                    formData.role === roleObj.value ? "bg-indigo-700 text-white" : ""
+                  className={`flex flex-col items-center justify-center gap-2 bg-[#262626] border border-gray-700 px-4 py-3 w-full sm:w-auto flex-1 rounded-lg text-[#ababab] hover:bg-[#333] transition-colors ${
+                    formData.role === roleObj.value ? "bg-indigo-700 text-white border-indigo-700" : ""
                   }`}
                   title={roleObj.label}
                 >

@@ -1,0 +1,14 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200">
+  <rect width="700" height="200" fill="transparent"/>
+  <text x="50" y="140"
+        font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-size="140"
+        font-weight="500"
+        fill="#FFFFFF">lun</text>
+  <text x="320" y="140"
+        font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-size="140"
+        font-weight="600"
+        fill="#35D6E5">IA</text>
+</svg>

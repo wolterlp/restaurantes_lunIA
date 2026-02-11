@@ -62,12 +62,12 @@ const MenuContainer = () => {
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-4 px-10 py-4 w-[100%]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-4 sm:px-10 py-4 w-[100%]">
         {displayMenus.map((menu) => {
           return (
             <div
               key={menu._id || menu.id}
-              className="flex flex-col items-start justify-between p-4 rounded-lg min-h-[100px] h-full cursor-pointer transition-all duration-200"
+              className="flex flex-col items-start justify-between p-4 rounded-lg min-h-[80px] sm:min-h-[100px] h-full cursor-pointer transition-all duration-200"
               style={{ backgroundColor: menu.bgColor }}
               onClick={() => {
                 setSelected(menu);
@@ -76,14 +76,14 @@ const MenuContainer = () => {
               }}
             >
               <div className="flex items-start justify-between w-full">
-                <h1 className="text-[#f5f5f5] text-lg font-semibold break-words w-[90%]">
+                <h1 className="text-[#f5f5f5] text-base sm:text-lg font-semibold break-words w-[90%]">
                   {menu.icon} {menu.name}
                 </h1>
                 {selected && (selected._id || selected.id) === (menu._id || menu.id) && (
                   <GrRadialSelected className="text-white shrink-0 mt-1" size={20} />
                 )}
               </div>
-              <p className="text-[#ababab] text-sm font-semibold">
+              <p className="text-[#ababab] text-xs sm:text-sm font-semibold">
                 {menu.items.length} Ítems
               </p>
             </div>
@@ -93,7 +93,7 @@ const MenuContainer = () => {
 
       <hr className="border-[#2a2a2a] border-t-2 mt-4" />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-10 py-4 w-[100%]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4 sm:px-10 py-4 w-[100%]">
         {selected?.items?.map((item) => {
           return (
             <div

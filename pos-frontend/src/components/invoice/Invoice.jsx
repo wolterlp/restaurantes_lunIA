@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useSelector } from "react-redux";
+import { getShortId } from "../../utils";
 
 const Invoice = ({ orderInfo, setShowInvoice }) => {
   const { role } = useSelector((state) => state.user);
@@ -87,17 +88,41 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
           <div className="mt-4 border-t pt-4 text-sm text-gray-700">
             <p>
               <strong>ID de Orden:</strong>{" "}
-              {Math.floor(new Date(orderInfo.orderDate).getTime())}
+              {getShortId(orderInfo._id)}
             </p>
             <p>
               <strong>Nombre:</strong> {orderInfo.customerDetails?.name || "Cliente"}
             </p>
+            {orderInfo.orderType === "Delivery" ? (
+              <>
+                <p>
+                  <strong>Tipo:</strong> Domicilio
+                </p>
+                <p>
+                  <strong>Dirección:</strong> {orderInfo.deliveryAddress || "N/A"}
+                </p>
+                <p>
+                  <strong>Estado de Pago:</strong>{" "}
+                  {orderInfo.orderStatus === "Completed" ? (
+                    <span className="text-green-600 font-bold">PAGADO</span>
+                  ) : (
+                    <span className="text-red-600 font-bold">PENDIENTE POR COBRAR</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <p>
+                <strong>Mesa:</strong> {orderInfo.table?.tableNo || "N/A"}
+              </p>
+            )}
             <p>
               <strong>Teléfono:</strong> {orderInfo.customerDetails?.phone || "N/A"}
             </p>
-            <p>
-              <strong>Invitados:</strong> {orderInfo.customerDetails?.guests || 0}
-            </p>
+            {orderInfo.orderType !== "Delivery" && (
+              <p>
+                <strong>Invitados:</strong> {orderInfo.customerDetails?.guests || 0}
+              </p>
+            )}
           </div>
 
           {/* Items Summary */}

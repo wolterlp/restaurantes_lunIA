@@ -4,8 +4,16 @@ const Timer = ({ startTime }) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
+    if (!startTime) return;
+    
     const start = new Date(startTime).getTime();
     
+    // Validate date
+    if (isNaN(start)) {
+        setElapsed(0);
+        return;
+    }
+
     const updateTimer = () => {
       const now = new Date().getTime();
       setElapsed(now - start);
@@ -18,6 +26,8 @@ const Timer = ({ startTime }) => {
   }, [startTime]);
 
   const formatTime = (ms) => {
+    if (isNaN(ms) || ms < 0) return "00:00";
+    
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);

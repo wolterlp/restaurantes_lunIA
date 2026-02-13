@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import BottomNav from "../components/shared/BottomNav";
 import BackButton from "../components/shared/BackButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllUsers, deleteUser, updateUser, register, getRoles, updateRolePermissions, resetRoles } from "../https";
+import { getAllUsers, deleteUser, updateUser, register, getRoles, updateRolePermissions, resetRoles, getUserData } from "../https";
 import { enqueueSnackbar } from "notistack";
 import { MdDelete, MdEdit } from "react-icons/md";
 import Modal from "../components/shared/Modal";
+import { useSelector, useDispatch } from "react-redux";
+import { setUser } from "../redux/slices/userSlice";
 
 const PERMISSION_LABELS = {
     "MANAGE_USERS": "Gestión de Usuarios",
@@ -15,11 +17,23 @@ const PERMISSION_LABELS = {
     "MANAGE_ORDERS": "Crear y Gestionar Pedidos",
     "VIEW_REPORTS": "Ver Reportes",
     "VIEW_DELIVERY": "Ver Domicilios",
-    "VIEW_COMPLETED": "Ver Pedidos Completados"
+    "VIEW_COMPLETED": "Ver Pedidos Completados",
+    "MANAGE_INVENTORY": "Gestionar Inventario",
+    "MANAGE_SUPPLIERS": "Gestionar Proveedores"
+};
+
+const ROLE_LABELS_ES = {
+  Admin: "Administrador",
+  Waiter: "Mesero",
+  Kitchen: "Cocina",
+  Cashier: "Caja",
+  Delivery: "Repartidor"
 };
 
 const Users = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { role: currentRole } = useSelector((state) => state.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -74,6 +88,18 @@ const Users = () => {
     onSuccess: () => {
         queryClient.invalidateQueries(["roles"]);
         enqueueSnackbar("Permisos actualizados", { variant: "success" });
+        // If current user's role was updated, refresh their permissions in Redux immediately
+        (async () => {
+          try {
+            const { data } = await getUserData();
+            const { _id, name, email, phone, role, permissions } = data.data;
+            if (role === currentRole) {
+              dispatch(setUser({ _id, name, email, phone, role, permissions }));
+            }
+          } catch {
+            // ignore
+          }
+        })();
     },
     onError: () => enqueueSnackbar("Error al actualizar permisos", { variant: "error" })
   });
@@ -217,7 +243,7 @@ const Users = () => {
                       user.role === 'Waiter' ? 'bg-blue-900 text-blue-300' : 
                       user.role === 'Kitchen' ? 'bg-orange-900 text-orange-300' : 
                       'bg-green-900 text-green-300'}`}>
-                    {user.role}
+                    {ROLE_LABELS_ES[user.role] || user.role}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -240,7 +266,7 @@ const Users = () => {
                   </button>
                   <button 
                     onClick={() => {
-                        if(confirm('¿Estás seguro de eliminar este usuario?')) deleteMutation.mutate(user._id)
+                        if(window.confirm('¿Estás seguro de eliminar este usuario?')) deleteMutation.mutate(user._id)
                     }} 
                     className="text-red-400 hover:text-red-300 text-xl"
                   >
@@ -315,7 +341,7 @@ const Users = () => {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="bg-[#1f1f1f] text-white p-3 rounded outline-none border border-[#383838] flex-1"
                 >
-                <option value="Admin">Admin</option>
+                <option value="Admin">Administrador</option>
                 <option value="Waiter">Mesero</option>
                 <option value="Kitchen">Cocina</option>
                 <option value="Cashier">Caja</option>
@@ -351,7 +377,7 @@ const Users = () => {
             <div className="flex justify-end">
                 <button 
                     onClick={() => {
-                        if(confirm("¿Estás seguro de restablecer todos los permisos a sus valores originales?")) {
+                        if(window.confirm("¿Estás seguro de restablecer todos los permisos a sus valores originales?")) {
                             resetRolesMutation.mutate();
                         }
                     }}

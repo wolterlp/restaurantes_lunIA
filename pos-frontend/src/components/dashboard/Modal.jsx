@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { IoMdClose, IoMdAdd, IoMdTrash, IoMdCreate } from "react-icons/io";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import { 
   addTable, updateTable, deleteTable, getTables,
   addCategory, updateCategory, deleteCategory, getAllCategories,
-  addDish, updateDish, deleteDish 
+  addDish, updateDish, deleteDish,
+  addInventoryMovement, getInventoryMovements,
+  getSuppliers, addSupplier, updateSupplier, deleteSupplier
 } from "../../https";
 import { enqueueSnackbar } from "notistack";
 import { popularDishes } from "../../constants";
@@ -21,6 +24,7 @@ const commonEmojis = [
 
 const Modal = ({ activeModal, setActiveModal }) => {
   const queryClient = useQueryClient();
+  const { role } = useSelector((state) => state.user);
   const [mode, setMode] = useState("list"); // list, create, edit
   const [selectedItem, setSelectedItem] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -28,7 +32,10 @@ const Modal = ({ activeModal, setActiveModal }) => {
   // Form States
   const [tableData, setTableData] = useState({ tableNo: "", seats: "" });
   const [categoryData, setCategoryData] = useState({ name: "", bgColor: "#000000", icon: "" });
-  const [dishData, setDishData] = useState({ name: "", price: "", categoryId: "", image: "" });
+  const [dishData, setDishData] = useState({ name: "", price: "", categoryId: "", image: "", stock: "", sku: "", barcode: "", unitCost: "", minThreshold: "", prepTime: 15 });
+  const [movementData, setMovementData] = useState({ categoryId: "", itemId: "", type: "Ingreso", quantity: "", unitCost: "", supplierId: "", supplier: "", note: "" });
+  const [supplierData, setSupplierData] = useState({ name: "", phone: "", email: "", address: "", notes: "", status: "Active" });
+  const [showSupplierCreateForm, setShowSupplierCreateForm] = useState(false);
 
   // Reset states when modal changes
   useEffect(() => {
@@ -36,7 +43,10 @@ const Modal = ({ activeModal, setActiveModal }) => {
     setSelectedItem(null);
     setTableData({ tableNo: "", seats: "" });
     setCategoryData({ name: "", bgColor: "#000000", icon: "" });
-    setDishData({ name: "", price: "", categoryId: "", image: "" });
+    setDishData({ name: "", price: "", categoryId: "", image: "", stock: "", sku: "", barcode: "", unitCost: "", minThreshold: "", prepTime: 15 });
+    setMovementData({ categoryId: "", itemId: "", type: "Ingreso", quantity: "", unitCost: "", supplierId: "", supplier: "", note: "" });
+    setSupplierData({ name: "", phone: "", email: "", address: "", notes: "", status: "Active" });
+    setShowSupplierCreateForm(false);
   }, [activeModal]);
 
   // Fetch Data
@@ -52,12 +62,24 @@ const Modal = ({ activeModal, setActiveModal }) => {
     enabled: activeModal === "table",
   });
   const tables = tablesRes?.data?.data || [];
+  const { data: movementsRes } = useQuery({
+    queryKey: ["inventory", "movements"],
+    queryFn: () => getInventoryMovements({ limit: 50 }),
+    enabled: activeModal === "inventory",
+  });
+  const { data: suppliersRes } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: getSuppliers,
+    enabled: activeModal === "suppliers" || activeModal === "inventory",
+  });
+  const suppliers = suppliersRes?.data?.data || [];
 
   // Mutations
   const onSuccess = (msg) => {
     enqueueSnackbar(msg, { variant: "success" });
     queryClient.invalidateQueries(["tables"]);
     queryClient.invalidateQueries(["categories"]);
+    queryClient.invalidateQueries(["inventory", "movements"]);
     if (mode !== "list") setMode("list");
   };
 
@@ -79,6 +101,24 @@ const Modal = ({ activeModal, setActiveModal }) => {
   const addDishMutation = useMutation({ mutationFn: addDish, onSuccess: (res) => onSuccess(res.data.message), onError });
   const updateDishMutation = useMutation({ mutationFn: updateDish, onSuccess: (res) => onSuccess(res.data.message), onError });
   const deleteDishMutation = useMutation({ mutationFn: deleteDish, onSuccess: (res) => onSuccess(res.data.message), onError });
+  const addMovementMutation = useMutation({ mutationFn: addInventoryMovement, onSuccess: (res) => onSuccess(res.data.message), onError });
+  const addSupplierMutation = useMutation({ mutationFn: addSupplier, onSuccess: (res) => {
+    onSuccess(res.data.message);
+    const created = res?.data?.data;
+    if (created?._id) {
+      setMovementData((prev) => ({ ...prev, supplierId: created._id, supplier: created.name }));
+      setShowSupplierCreateForm(false);
+    }
+    queryClient.invalidateQueries(["suppliers"]);
+  }, onError });
+  const updateSupplierMutation = useMutation({ mutationFn: updateSupplier, onSuccess: (res) => {
+    onSuccess(res.data.message);
+    queryClient.invalidateQueries(["suppliers"]);
+  }, onError });
+  const deleteSupplierMutation = useMutation({ mutationFn: deleteSupplier, onSuccess: (res) => {
+    onSuccess(res.data.message);
+    queryClient.invalidateQueries(["suppliers"]);
+  }, onError });
 
   const handleCloseModal = () => setActiveModal(null);
 
@@ -93,6 +133,12 @@ const Modal = ({ activeModal, setActiveModal }) => {
     } else if (activeModal === "dishes") {
       if (mode === "create") addDishMutation.mutate(dishData);
       else if (mode === "edit") updateDishMutation.mutate({ categoryId: selectedItem.categoryId, dishId: selectedItem._id, ...dishData });
+    } else if (activeModal === "inventory") {
+      if (mode === "create") addMovementMutation.mutate(movementData);
+      else if (mode === "edit") updateDishMutation.mutate({ categoryId: selectedItem.categoryId, dishId: selectedItem._id, ...dishData });
+    } else if (activeModal === "suppliers") {
+      if (mode === "create") addSupplierMutation.mutate(supplierData);
+      else if (mode === "edit") updateSupplierMutation.mutate({ id: selectedItem._id, ...supplierData });
     }
   };
 
@@ -104,9 +150,11 @@ const Modal = ({ activeModal, setActiveModal }) => {
     } else if (type === "category") {
       setCategoryData({ name: item.name, bgColor: item.bgColor, icon: item.icon });
     } else if (type === "dish") {
-      // Find category for this dish to pre-fill categoryId if needed, though usually embedded
-      // For editing dish, we need categoryId. I'll pass it in `item` when mapping.
-      setDishData({ name: item.name, price: item.price, categoryId: item.categoryId, image: item.image || "" });
+      setDishData({ name: item.name, price: item.price, categoryId: item.categoryId, image: item.image || "", stock: item.stock ?? "", sku: item.sku ?? "", barcode: item.barcode ?? "", unitCost: item.unitCost ?? "", minThreshold: item.minThreshold ?? "", prepTime: item.prepTime ?? 15 });
+    } else if (type === "invItem") {
+      setDishData({ name: item.name, price: item.price, categoryId: item.categoryId, image: item.image || "", stock: item.stock ?? "", sku: item.sku ?? "", barcode: item.barcode ?? "", unitCost: item.unitCost ?? "", minThreshold: item.minThreshold ?? "" });
+    } else if (type === "supplier") {
+      setSupplierData({ name: item.name, phone: item.phone || "", email: item.email || "", address: item.address || "", notes: item.notes || "", status: item.status || "Active" });
     }
   };
 
@@ -116,9 +164,23 @@ const Modal = ({ activeModal, setActiveModal }) => {
     if (type === "table") deleteTableMutation.mutate(item._id);
     else if (type === "category") deleteCategoryMutation.mutate(item._id);
     else if (type === "dish") deleteDishMutation.mutate({ categoryId: item.categoryId, dishId: item._id });
+    else if (type === "supplier") deleteSupplierMutation.mutate(item._id);
+  };
+  const handleMovementOpen = (item) => {
+    setSelectedItem(item);
+    setMode("create");
+    setMovementData({ categoryId: item.categoryId, itemId: item._id, type: "Ingreso", quantity: "", unitCost: item.unitCost ?? "", supplierId: "", supplier: "", note: "" });
   };
 
   const getTitle = () => {
+    if (activeModal === "inventory") {
+      if (mode === "list") return "Gestionar Inventario";
+      return mode === "create" ? "Movimiento de Inventario" : "Editar Inventario";
+    }
+    if (activeModal === "suppliers") {
+      if (mode === "list") return "Gestionar Proveedores";
+      return mode === "create" ? "Agregar Proveedor" : "Editar Proveedor";
+    }
     if (mode === "list") return `Gestionar ${activeModal === "dishes" ? "Platillos" : activeModal === "table" ? "Mesas" : "Categorías"}`;
     return `${mode === "create" ? "Agregar" : "Editar"} ${activeModal === "dishes" ? "Platillo" : activeModal === "table" ? "Mesa" : "Categoría"}`;
   };
@@ -148,7 +210,10 @@ const Modal = ({ activeModal, setActiveModal }) => {
                     setMode("create");
                     setTableData({ tableNo: "", seats: "" });
                     setCategoryData({ name: "", bgColor: "#000000", icon: "" });
-                    setDishData({ name: "", price: "", categoryId: "", image: "" });
+                    setDishData({ name: "", price: "", categoryId: "", image: "", stock: "", sku: "", barcode: "", unitCost: "", minThreshold: "", prepTime: 15 });
+                    if (activeModal === "suppliers") {
+                      setSupplierData({ name: "", phone: "", email: "", address: "", notes: "", status: "Active" });
+                    }
                 }} 
                 className="bg-[#f6b100] text-[#f5f5f5] px-4 py-2 rounded-lg flex items-center gap-2 font-semibold"
               >
@@ -206,6 +271,41 @@ const Modal = ({ activeModal, setActiveModal }) => {
                       </div>
                     </div>
                   ))}
+                </div>
+              ))}
+
+              {activeModal === "inventory" && categories.map((cat) => (
+                <div key={cat._id} className="mb-4">
+                  <h3 className="text-[#ababab] text-sm font-semibold mb-2 ml-1">{cat.name}</h3>
+                  {(cat.items || []).filter(i => (i.prepTime ?? 15) === 0).length === 0 && <p className="text-[#666] text-xs ml-1 italic">No hay productos sin preparación</p>}
+                  {(cat.items || []).filter(i => (i.prepTime ?? 15) === 0).map((dish) => (
+                    <div key={dish._id} className="bg-[#1f1f1f] p-3 rounded-lg flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-[40px] h-[40px] rounded-full bg-[#333] flex items-center justify-center text-xs text-[#ababab]">{dish.image ? <img src={dish.image} alt={dish.name} className="w-full h-full object-cover rounded-full" /> : "Prod"}</div>
+                        <div>
+                          <h4 className="text-[#f5f5f5] font-medium">{dish.name}</h4>
+                          <p className="text-[#ababab] text-xs">Stock: {dish.stock ?? 0}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEdit({ ...dish, categoryId: cat._id }, "invItem")} className="text-blue-500 p-2 hover:bg-[#262626] rounded"><IoMdCreate size={18} /></button>
+                        <button onClick={() => handleMovementOpen({ ...dish, categoryId: cat._id })} className="text-[#f6b100] p-2 hover:bg-[#262626] rounded"><IoMdAdd size={18} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {activeModal === "suppliers" && (suppliers || []).map((s) => (
+                <div key={s._id} className="bg-[#1f1f1f] p-4 rounded-lg flex justify-between items-center">
+                  <div>
+                    <h3 className="text-[#f5f5f5] font-semibold">{s.name}</h3>
+                    <p className="text-[#ababab] text-xs">{[s.phone, s.email].filter(Boolean).join(" • ")}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(s, "supplier")} className="text-blue-500 p-2 hover:bg-[#262626] rounded"><IoMdCreate size={20} /></button>
+                    <button onClick={() => handleDelete(s, "supplier")} className="text-red-500 p-2 hover:bg-[#262626] rounded"><IoMdTrash size={20} /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -398,6 +498,290 @@ const Modal = ({ activeModal, setActiveModal }) => {
                       required
                     />
                   </div>
+                </div>
+                <div className="flex items-center justify-between rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                  <span className="text-[#ababab] text-sm font-medium">No requiere preparación</span>
+                  <input
+                    type="checkbox"
+                    checked={(dishData.prepTime ?? 15) === 0}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setDishData({ ...dishData, prepTime: checked ? 0 : 15 });
+                    }}
+                    className="w-5 h-5 accent-[#f6b100]"
+                  />
+                </div>
+              </>
+            )}
+
+            {activeModal === "inventory" && mode === "edit" && (
+              <>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Stock</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={dishData.stock}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) {
+                          setDishData({ ...dishData, stock: val });
+                        }
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">SKU</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="text"
+                      value={dishData.sku}
+                      onChange={(e) => setDishData({ ...dishData, sku: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Código de barras</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="text"
+                      value={dishData.barcode}
+                      onChange={(e) => setDishData({ ...dishData, barcode: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Costo unitario</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={dishData.unitCost}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) {
+                          setDishData({ ...dishData, unitCost: val });
+                        }
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Stock mínimo</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={dishData.minThreshold}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) {
+                          setDishData({ ...dishData, minThreshold: val });
+                        }
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeModal === "inventory" && mode === "create" && (
+              <>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Tipo de movimiento</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <select
+                      value={movementData.type}
+                      onChange={(e) => setMovementData({ ...movementData, type: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none [&>option]:text-black"
+                      required
+                    >
+                      <option value="Ingreso">Ingreso</option>
+                      <option value="Salida">Salida</option>
+                      <option value="Ajuste">Ajuste</option>
+                      <option value="Merma">Merma</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Cantidad</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={movementData.quantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) {
+                          setMovementData({ ...movementData, quantity: val });
+                        }
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Costo unitario</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={movementData.unitCost}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) {
+                          setMovementData({ ...movementData, unitCost: val });
+                        }
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Proveedor</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] gap-2">
+                    <select
+                      value={movementData.supplierId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        const found = suppliers.find(s => s._id === id);
+                        setMovementData({ ...movementData, supplierId: id, supplier: found?.name || "" });
+                        setShowSupplierCreateForm(false);
+                      }}
+                      className="bg-transparent flex-1 text-white focus:outline-none [&>option]:text-black"
+                    >
+                      <option value="">Seleccionar proveedor</option>
+                      {suppliers.map(s => (
+                        <option key={s._id} value={s._id}>{s.name}</option>
+                      ))}
+                    </select>
+                    {role === "Admin" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!showSupplierCreateForm) {
+                          setShowSupplierCreateForm(true);
+                          return;
+                        }
+                        if (!supplierData.name) {
+                          enqueueSnackbar("Ingrese nombre del proveedor", { variant: "warning" });
+                          return;
+                        }
+                        addSupplierMutation.mutate(supplierData);
+                      }}
+                      className="bg-[#f6b100] text-[#1f1f1f] px-3 py-2 rounded font-bold"
+                    >
+                      Crear proveedor
+                    </button>
+                    )}
+                  </div>
+                  {showSupplierCreateForm && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Nombre"
+                        value={supplierData.name}
+                        onChange={(e) => setSupplierData({ ...supplierData, name: e.target.value })}
+                        className="bg-[#1f1f1f] text-white p-2 rounded outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Teléfono"
+                        value={supplierData.phone}
+                        onChange={(e) => setSupplierData({ ...supplierData, phone: e.target.value })}
+                        className="bg-[#1f1f1f] text-white p-2 rounded outline-none"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={supplierData.email}
+                        onChange={(e) => setSupplierData({ ...supplierData, email: e.target.value })}
+                        className="bg-[#1f1f1f] text-white p-2 rounded outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Dirección"
+                        value={supplierData.address}
+                        onChange={(e) => setSupplierData({ ...supplierData, address: e.target.value })}
+                        className="bg-[#1f1f1f] text-white p-2 rounded outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Nota</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="text"
+                      value={movementData.note}
+                      onChange={(e) => setMovementData({ ...movementData, note: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeModal === "suppliers" && (
+              <>
+                <div>
+                  <label className="block text-[#ababab] mb-2 text-sm font-medium">Nombre</label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="text"
+                      value={supplierData.name}
+                      onChange={(e) => setSupplierData({ ...supplierData, name: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="text"
+                      placeholder="Teléfono"
+                      value={supplierData.phone}
+                      onChange={(e) => setSupplierData({ ...supplierData, phone: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={supplierData.email}
+                      onChange={(e) => setSupplierData({ ...supplierData, email: e.target.value })}
+                      className="bg-transparent flex-1 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                  <input
+                    type="text"
+                    placeholder="Dirección"
+                    value={supplierData.address}
+                    onChange={(e) => setSupplierData({ ...supplierData, address: e.target.value })}
+                    className="bg-transparent flex-1 text-white focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                  <input
+                    type="text"
+                    placeholder="Notas"
+                    value={supplierData.notes}
+                    onChange={(e) => setSupplierData({ ...supplierData, notes: e.target.value })}
+                    className="bg-transparent flex-1 text-white focus:outline-none"
+                  />
                 </div>
               </>
             )}

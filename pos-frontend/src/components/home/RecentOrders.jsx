@@ -39,7 +39,7 @@ const RecentOrders = () => {
 
   return (
     <div className="px-8 mt-6">
-      <div className="bg-[#1a1a1a] w-full min-h-[420px] md:h-[calc(100vh-240px)] rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-[#1a1a1a] w-full rounded-lg flex flex-col pb-20 md:pb-24 overflow-hidden">
         <div className="flex justify-between items-center px-6 py-4">
           <h1 className="text-[#f5f5f5] text-lg font-semibold tracking-wide">
             Pedidos Recientes
@@ -70,7 +70,7 @@ const RecentOrders = () => {
         </div>
 
         {/* Order list */}
-        <div className="mt-3 px-6 overflow-y-auto flex-1 scrollbar-hide">
+        <div className="mt-3 px-6 overflow-y-auto flex-1 scrollbar-hide pb-20 md:pb-24">
           {resData?.data?.data?.length > 0 ? (
             resData.data.data.slice().sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)).map((order) => {
               return <OrderList key={order._id} order={order} />;

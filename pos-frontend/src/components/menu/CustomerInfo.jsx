@@ -78,7 +78,7 @@ const CustomerInfo = () => {
           {customerData.customerName || "Nombre del Cliente"}
         </h1>
         <p className="text-xs text-[#ababab] font-medium">
-          #{customerData.orderId || "N/A"} / {customerData.orderType === "Delivery" ? "Domicilio" : "Comer aquí"}
+          #{customerData.orderId || "N/A"} / {customerData.orderType === "Delivery" ? "Domicilio" : customerData.orderType === "Takeaway" ? "Para Llevar" : "Comer aquí"}
         </p>
         <p className="text-xs text-[#ababab] font-medium">
           {formatDate(dateTime)}
@@ -100,6 +100,12 @@ const CustomerInfo = () => {
             className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Dine-In" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
           >
             Para Mesa
+          </button>
+          <button 
+            onClick={() => setOrderType("Takeaway")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Takeaway" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Para Llevar
           </button>
           <button 
             onClick={() => setOrderType("Delivery")}

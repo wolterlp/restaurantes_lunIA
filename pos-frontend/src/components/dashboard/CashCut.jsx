@@ -115,7 +115,7 @@ const CashCut = () => {
                     <img 
                         src="http://localhost:3000/uploads/1770742061679-176177146.svg" 
                         alt="Restaurant Logo" 
-                        className="h-12 w-auto object-contain"
+                        className="h-12 w-auto object-contain rounded-lg"
                         onError={(e) => {
                             e.target.style.display = 'none';
                         }}
@@ -146,34 +146,7 @@ const CashCut = () => {
 
     return (
         <div className="container mx-auto p-6 text-[#f5f5f5]">
-            {/* Print Styles */}
-            <style jsx>{`
-                @media print {
-                    @page {
-                        margin: 1cm;
-                        size: A4;
-                    }
-                    body {
-                        print-color-adjust: exact;
-                        -webkit-print-color-adjust: exact;
-                    }
-                    .print\:hidden {
-                        display: none !important;
-                    }
-                    .print\:block {
-                        display: block !important;
-                    }
-                    .print\:text-black {
-                        color: black !important;
-                    }
-                    .print\:p-4 {
-                        padding: 1rem !important;
-                    }
-                    .print\:mb-6 {
-                        margin-bottom: 1.5rem !important;
-                    }
-                }
-            `}</style>
+            
             
             {/* Print Header - Only visible when printing */}
             <PrintHeader />

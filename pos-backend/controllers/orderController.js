@@ -14,36 +14,103 @@ const addOrder = async (req, res, next) => {
 
     const orderData = req.body;
     
-    // Ensure default status for items
+    // Duplicate guard: prevent double-click duplicate within short time window
+    try {
+        const windowMs = 5000;
+        const recent = await Order.find({
+            createdAt: { $gte: new Date(Date.now() - windowMs) },
+            orderType: orderData.orderType,
+            "customerDetails.name": orderData.customerDetails?.name || "Cliente",
+            table: orderData.table || undefined
+        }).sort({ createdAt: -1 });
+        
+        const sameItems = (a = [], b = []) => {
+            if (a.length !== b.length) return false;
+            const norm = (list) => list.map(i => ({
+                id: String(i.dishId || i.id || ""),
+                q: Number(i.quantity || 0)
+            })).sort((x, y) => x.id.localeCompare(y.id) || x.q - y.q);
+            const na = norm(a), nb = norm(b);
+            for (let i = 0; i < na.length; i++) {
+                if (na[i].id !== nb[i].id || na[i].q !== nb[i].q) return false;
+            }
+            return true;
+        };
+        
+        const dup = recent.find(r => 
+            Number(r.bills?.total || 0) === Number(orderData.bills?.total || 0) &&
+            sameItems(r.items, orderData.items)
+        );
+        if (dup) {
+            return res.status(200).json({ success: true, message: "Pedido ya existe (protección doble click)", data: dup });
+        }
+    } catch (e) {
+        // continue silently on guard failure
+    }
+    
+    // Ensure default status for items and auto-serve non-preparation items (prepTime === 0)
     if (orderData.items) {
-        orderData.items = orderData.items.map(item => ({
-            ...item,
-            status: "Pending",
-            createdAt: new Date()
-        }));
-
-        // Single item orders start as In Progress (as per requirement)
-        if (orderData.items.length === 1) {
+        const processedItems = [];
+        for (const item of orderData.items) {
+            const base = { ...item, createdAt: new Date() };
+            if (item.dishId) {
+                // Find the matched category item to read prepTime
+                const categoryDoc = await Category.findOne(
+                    { "items._id": item.dishId },
+                    { "items.$": 1 }
+                );
+                const matched = categoryDoc?.items?.[0];
+                if (matched && matched.prepTime === 0) {
+                    processedItems.push({
+                        ...base,
+                        requiresPreparation: false,
+                        status: "Ready",
+                        readyAt: new Date()
+                    });
+                    continue;
+                }
+            }
+            processedItems.push({
+                ...base,
+                requiresPreparation: true,
+                status: "Pending"
+            });
+        }
+        orderData.items = processedItems;
+        
+        // Set initial order status based on items
+        const totalItems = orderData.items.length;
+        const readyItems = orderData.items.filter(i => i.status === "Ready").length;
+        const servedItems = orderData.items.filter(i => i.status === "Served").length;
+        const inProgressItems = orderData.items.filter(i => i.status === "In Progress").length;
+        const finishedItems = readyItems + servedItems;
+        if (totalItems > 0 && finishedItems === totalItems) {
+            orderData.orderStatus = "Ready";
+        } else if (finishedItems > 0 || inProgressItems > 0) {
             orderData.orderStatus = "In Progress";
-            // Also mark the single item as In Progress? 
-            // The user said "entra de inmediato a 'en progreso2'". 
-            // Usually this refers to Order Status. 
-            // Let's keep items as Pending so Chef can mark Ready.
-            // But if Order is In Progress, it shows in Chef's active view.
+        } else {
+            orderData.orderStatus = "Pending";
         }
     }
 
     const order = new Order(orderData);
     await order.save();
 
-    // Inventory Update
+    // Inventory Update (only for items sin preparación: prepTime === 0)
     if (orderData.items && orderData.items.length > 0) {
       for (const item of orderData.items) {
         if (item.dishId) {
-          await Category.findOneAndUpdate(
+          const categoryDoc = await Category.findOne(
             { "items._id": item.dishId },
-            { $inc: { "items.$.stock": -item.quantity } }
+            { "items.$": 1 }
           );
+          const matched = categoryDoc?.items?.[0];
+          if (matched && matched.prepTime === 0) {
+            await Category.findOneAndUpdate(
+              { "items._id": item.dishId },
+              { $inc: { "items.$.stock": -item.quantity } }
+            );
+          }
         }
       }
     }
@@ -87,22 +154,63 @@ const addOrderItems = async (req, res, next) => {
         return next(error);
     }
 
-    // Append new items
+    // Append new items with auto-serve logic for non-preparation items (prepTime === 0)
     if (items && items.length > 0) {
-        const newItems = items.map(item => ({
-            ...item,
-            status: "Pending",
-            createdAt: new Date()
-        }));
+        const newItems = [];
+        for (const item of items) {
+            const base = { ...item, createdAt: new Date() };
+            if (item.dishId) {
+                const categoryDoc = await Category.findOne(
+                    { "items._id": item.dishId },
+                    { "items.$": 1 }
+                );
+                const matched = categoryDoc?.items?.[0];
+                if (matched && matched.prepTime === 0) {
+                    newItems.push({
+                        ...base,
+                        requiresPreparation: false,
+                        status: "Ready",
+                        readyAt: new Date()
+                    });
+                    continue;
+                }
+            }
+            newItems.push({
+                ...base,
+                requiresPreparation: true,
+                status: "Pending"
+            });
+        }
         order.items.push(...newItems);
+        
+        // Recompute order status after adding items
+        const totalItems = order.items.length;
+        const readyItems = order.items.filter(i => i.status === "Ready").length;
+        const servedItems = order.items.filter(i => i.status === "Served").length;
+        const inProgressItems = order.items.filter(i => i.status === "In Progress").length;
+        const finishedItems = readyItems + servedItems;
+        if (totalItems > 0 && finishedItems === totalItems) {
+            order.orderStatus = "Ready";
+        } else if (finishedItems > 0 || inProgressItems > 0) {
+            order.orderStatus = "In Progress";
+        } else {
+            order.orderStatus = "Pending";
+        }
 
-        // Update Inventory for new items
+        // Update Inventory for new items (solo sin preparación)
         for (const item of items) {
             if (item.dishId) {
-                await Category.findOneAndUpdate(
+                const categoryDoc = await Category.findOne(
                     { "items._id": item.dishId },
-                    { $inc: { "items.$.stock": -item.quantity } }
+                    { "items.$": 1 }
                 );
+                const matched = categoryDoc?.items?.[0];
+                if (matched && matched.prepTime === 0) {
+                    await Category.findOneAndUpdate(
+                        { "items._id": item.dishId },
+                        { $inc: { "items.$.stock": -item.quantity } }
+                    );
+                }
             }
         }
     }
@@ -117,10 +225,7 @@ const addOrderItems = async (req, res, next) => {
         }
     }
     
-    // If we add new items, the order is not fully Ready anymore
-    if (order.orderStatus === "Ready") {
-        order.orderStatus = "In Progress";
-    }
+    // Removed unconditional downgrade of status; status is recomputed above when items are added
 
     await order.save();
 
@@ -140,11 +245,11 @@ const updateItemStatus = async (req, res, next) => {
         const { orderId, itemId } = req.params;
         const { status } = req.body; // "Pending", "Ready", "Served"
 
-        // RBAC: Only Kitchen or Admin can update to any status. Waiter can only mark as "Served".
+        // RBAC: Kitchen/Admin can update any status. Waiter/Cashier solo "Served".
         if (req.user.role !== "Kitchen" && req.user.role !== "Admin") {
-            if (req.user.role === "Waiter") {
+            if (req.user.role === "Waiter" || req.user.role === "Cashier") {
                 if (status !== "Served") {
-                    return next(createHttpError(403, "Acceso denegado: ¡Los meseros solo pueden marcar artículos como Servidos!"));
+                    return next(createHttpError(403, "Acceso denegado: ¡Mesero/Cajero solo pueden marcar artículos como Servidos!"));
                 }
             } else {
                 return next(createHttpError(403, "Acceso denegado: ¡Rol no autorizado para actualizar artículos!"));
@@ -256,8 +361,8 @@ const updateOrder = async (req, res, next) => {
                 return next(error);
             }
         } else if (orderStatus === "Cancelled") {
-            if (role !== "Admin" && role !== "Cashier") {
-                const error = createHttpError(403, "Acceso denegado: ¡Solo el administrador o cajero pueden anular pedidos!");
+            if (role !== "Admin") {
+                const error = createHttpError(403, "Acceso denegado: ¡Solo el administrador puede anular pedidos!");
                 return next(error);
             }
         } else {

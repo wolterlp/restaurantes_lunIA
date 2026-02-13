@@ -2,10 +2,12 @@ const express = require("express");
 const { addCategory, addDish, getAllCategories, updateCategory, deleteCategory, updateDish, deleteDish } = require("../controllers/categoryController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
 const verifyPermission = require("../middlewares/permissionMiddleware");
+const licenseGuard = require("../middlewares/licenseMiddleware");
 
 const router = express.Router();
 
 router.use(isVerifiedUser);
+router.use(licenseGuard);
 
 router.post("/add-category", verifyPermission("MANAGE_MENU"), addCategory);
 router.put("/update-category/:id", verifyPermission("MANAGE_MENU"), updateCategory);

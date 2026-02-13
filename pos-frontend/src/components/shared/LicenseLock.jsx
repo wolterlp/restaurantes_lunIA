@@ -3,11 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { FaKey, FaExclamationTriangle, FaCheckCircle, FaLock } from 'react-icons/fa';
 import { BsShieldLockFill } from 'react-icons/bs';
+import { useSelector } from 'react-redux';
 
 const LicenseLock = () => {
     const [licenseKey, setLicenseKey] = useState('');
     const [error, setError] = useState(null);
     const queryClient = useQueryClient();
+    const { role, permissions, isAuth } = useSelector((state) => state.user);
+    const canManageSettings = permissions?.includes("MANAGE_SETTINGS") || role === "Admin";
 
     // Fetch config to check license status
     const { data: config, isLoading } = useQuery({
@@ -43,10 +46,48 @@ const LicenseLock = () => {
 
     // Check if license is valid
     const license = config?.license;
-    const isLicenseValid = license?.status === 'active' && new Date(license.expirationDate) > new Date();
+    const isLicenseValid = license?.status === 'active' && (!license.expirationDate || new Date(license.expirationDate) > new Date());
+    const warningDays = config?.customization?.licenseWarningDays || 7;
+    const daysRemaining = license?.expirationDate ? Math.ceil((new Date(license.expirationDate) - new Date()) / (1000 * 60 * 60 * 24)) : null;
     
+    // Allow acceso a la página de autenticación cuando no hay sesión (no bloquear el login)
+    if (!isAuth) {
+        return null;
+    }
+
     // If valid, don't render anything (or render children if used as wrapper)
-    if (isLicenseValid) return null;
+    if (isLicenseValid) {
+        if (daysRemaining !== null && daysRemaining <= warningDays) {
+            return (
+                <div className="fixed bottom-4 left-4 right-4 z-[9998]">
+                    <div className="bg-[#1a1a1a] border border-yellow-600 rounded-xl p-4 shadow-lg flex justify-between items-center">
+                        <p className="text-sm text-[#f5f5f5]">
+                            La licencia vence en {daysRemaining} días. Renueve para evitar interrupciones.
+                        </p>
+                        {isAuth && canManageSettings && (
+                            <form onSubmit={(e) => { e.preventDefault(); if (!licenseKey.trim()) return; activateMutation.mutate(licenseKey); }} className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={licenseKey}
+                                    onChange={(e) => setLicenseKey(e.target.value)}
+                                    className="block w-48 px-3 py-2 border border-gray-700 rounded-lg bg-[#262626] text-[#f5f5f5] text-xs font-mono"
+                                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={activateMutation.isPending}
+                                    className="px-3 py-2 rounded-lg text-xs font-semibold text-black bg-[#ecab0f] disabled:opacity-50"
+                                >
+                                    {activateMutation.isPending ? 'Validando...' : 'Actualizar'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    }
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900 bg-opacity-95 backdrop-blur-sm p-4">
@@ -74,7 +115,8 @@ const LicenseLock = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    {isAuth && canManageSettings ? (
+                      <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Clave de Licencia</label>
                             <div className="relative">
@@ -103,7 +145,15 @@ const LicenseLock = () => {
                                 </>
                             )}
                         </button>
-                    </form>
+                      </form>
+                    ) : (
+                      <div className="text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                          <FaLock className="text-gray-600" />
+                          <span className="text-sm text-gray-700">Solo un Administrador puede activar la licencia.</span>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="mt-6 text-center text-xs text-gray-400">
                         <p>ID de Instalación: {config?._id || 'Desconocido'}</p>

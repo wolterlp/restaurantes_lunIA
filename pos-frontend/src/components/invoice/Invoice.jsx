@@ -5,7 +5,7 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useSelector } from "react-redux";
 import { getShortId } from "../../utils";
 
-const Invoice = ({ orderInfo, setShowInvoice }) => {
+const Invoice = ({ orderInfo, setShowInvoice, isCopy = false }) => {
   const { role } = useSelector((state) => state.user);
   const invoiceRef = useRef(null);
   const { formatCurrency } = useCurrency();
@@ -80,7 +80,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
             </motion.div>
           </div>
 
-          <h2 className="text-xl font-bold text-center mb-2">Recibo de Orden</h2>
+          <h2 className="text-xl font-bold text-center mb-2">{isCopy ? "Recibo de Orden (COPIA)" : "Recibo de Orden"}</h2>
           <p className="text-gray-600 text-center">¡Gracias por su pedido!</p>
 
           {/* Order Details */}
@@ -93,7 +93,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
             <p>
               <strong>Nombre:</strong> {orderInfo.customerDetails?.name || "Cliente"}
             </p>
-            {orderInfo.orderType === "Delivery" ? (
+            {orderInfo.orderType === "Delivery" && (
               <>
                 <p>
                   <strong>Tipo:</strong> Domicilio
@@ -110,9 +110,15 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                   )}
                 </p>
               </>
-            ) : (
+            )}
+            {orderInfo.orderType === "Dine-In" && (
               <p>
                 <strong>Mesa:</strong> {orderInfo.table?.tableNo || "N/A"}
+              </p>
+            )}
+            {orderInfo.orderType === "Takeaway" && (
+              <p>
+                <strong>Tipo:</strong> Para Llevar
               </p>
             )}
             <p>

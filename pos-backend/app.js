@@ -48,7 +48,7 @@ app.use("/uploads", express.static("uploads"));
 
 // Root Endpoint
 app.get("/", (req,res) => {
-    res.json({message : "Hello from POS Server!"});
+    res.json({message : "Servidor POS activo"});
 })
 
 // Other Endpoints
@@ -62,6 +62,9 @@ app.use("/api/cash", require("./routes/cashRoute"));
 app.use("/api/roles", require("./routes/roleRoute"));
 app.use("/api/reports", require("./routes/reportRoute"));
 app.use("/api/upload", require("./routes/uploadRoute"));
+app.use("/api/inventory", require("./routes/inventoryRoute"));
+app.use("/api/supplier", require("./routes/supplierRoute"));
+
 
 // Global Error Handler
 app.use(globalErrorHandler);

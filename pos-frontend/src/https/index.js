@@ -93,3 +93,13 @@ export const uploadImage = (formData) => axiosWrapper.post("/api/upload", formDa
         "Content-Type": "multipart/form-data"
     }
 });
+
+// Inventory Endpoints
+export const addInventoryMovement = (data) => axiosWrapper.post("/api/inventory/movement", data);
+export const getInventoryMovements = (params) => axiosWrapper.get("/api/inventory/movement", { params });
+
+// Supplier Endpoints
+export const getSuppliers = () => axiosWrapper.get("/api/supplier");
+export const addSupplier = (data) => axiosWrapper.post("/api/supplier", data);
+export const updateSupplier = ({ id, ...data }) => axiosWrapper.put(`/api/supplier/${id}`, data);
+export const deleteSupplier = (id) => axiosWrapper.delete(`/api/supplier/${id}`);

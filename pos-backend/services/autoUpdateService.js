@@ -1,7 +1,7 @@
 const Order = require("../models/orderModel");
 
 const startAutoUpdateService = (io) => {
-    console.log("Starting Auto-Update Service for Ready -> Served items...");
+    console.log("Starting Auto-Update Service for Ready -> Served items (prepared only)...");
 
     setInterval(async () => {
         try {
@@ -13,7 +13,8 @@ const startAutoUpdateService = (io) => {
                 "items": {
                     $elemMatch: {
                         status: "Ready",
-                        readyAt: { $lte: fiveMinutesAgo }
+                        readyAt: { $lte: fiveMinutesAgo },
+                        requiresPreparation: { $ne: false }
                     }
                 }
             });
@@ -25,7 +26,7 @@ const startAutoUpdateService = (io) => {
                     let updated = false;
                     
                     for (const item of order.items) {
-                        if (item.status === "Ready" && item.readyAt && item.readyAt <= fiveMinutesAgo) {
+                        if (item.status === "Ready" && item.readyAt && item.readyAt <= fiveMinutesAgo && item.requiresPreparation !== false) {
                             item.status = "Served";
                             item.servedAt = new Date(); // Set served timestamp
                             updated = true;

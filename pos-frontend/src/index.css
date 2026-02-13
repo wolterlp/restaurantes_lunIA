@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+/* Fuente del sistema para evitar dependencias externas */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 
 /* Fix for date inputs on dark background */
@@ -50,5 +50,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .scrollbar-hide {
       -ms-overflow-style: none;
       scrollbar-width: none;
+  }
+}
+
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .print\:text-black {
+    color: black !important;
+  }
+  .print\:p-4 {
+    padding: 1rem !important;
+  }
+  .print\:mb-6 {
+    margin-bottom: 1.5rem !important;
   }
 }

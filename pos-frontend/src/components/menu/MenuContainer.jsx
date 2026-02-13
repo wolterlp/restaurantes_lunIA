@@ -46,6 +46,12 @@ const MenuContainer = () => {
     if(itemCount === 0) return;
 
     const {name, price} = item;
+    const isNoPrep = ((item.prepTime ?? 15) === 0);
+    const availableStock = typeof item.stock === "number" ? item.stock : Infinity;
+    if (isNoPrep) {
+      if (availableStock <= 0) return;
+      if (itemCount > availableStock) return;
+    }
     const newObj = { 
       id: Date.now(), 
       dishId: item._id || item.id, // Store original dish ID
@@ -110,6 +116,13 @@ const MenuContainer = () => {
                 <p className="text-[#f5f5f5] text-md font-bold">
                   {formatCurrency(item.price)}
                 </p>
+                {((item.prepTime ?? 15) === 0) ? (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded ${item.stock === 0 ? "bg-red-900 text-red-300" : "bg-[#333] text-[#ababab]"}`}>
+                    Stock: {typeof item.stock === "number" ? item.stock : "N/A"}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2 py-1 rounded bg-[#333] text-[#ababab]">Preparación</span>
+                )}
                 <div className="flex items-center justify-between bg-[#1f1f1f] px-2 py-1 rounded-lg gap-2">
                   <button
                     onClick={() => decrement(item._id || item.id)}
@@ -127,6 +140,13 @@ const MenuContainer = () => {
                     +
                   </button>
                 </div>
+              </div>
+              <div className="w-full mt-2">
+                {(item.sku || item.barcode) && (
+                  <p className="text-[#888] text-[11px] truncate">
+                    {item.sku ? `SKU: ${item.sku}` : ""}{item.sku && item.barcode ? " | " : ""}{item.barcode ? `Código: ${item.barcode}` : ""}
+                  </p>
+                )}
               </div>
             </div>
           );

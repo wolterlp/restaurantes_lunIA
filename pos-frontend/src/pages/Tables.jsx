@@ -62,7 +62,7 @@ const Tables = () => {
         <div className="flex items-center gap-4 w-full md:w-auto">
           <BackButton />
           <h1 className="text-[#f5f5f5] text-xl md:text-2xl font-bold tracking-wider">
-            Tables
+            Mesas
           </h1>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 w-full md:w-auto">

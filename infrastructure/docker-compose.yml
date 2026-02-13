@@ -1,0 +1,61 @@
+services:
+  # --- REVERSE PROXY GLOBAL (Traefik) ---
+  traefik:
+    image: traefik:v2.10
+    container_name: global-proxy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy-public
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./acme.json:/acme.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`proxy.tudominio.com`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+
+  # --- MONITORIZACIÓN (Uptime Kuma) ---
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: global-monitoring
+    restart: unless-stopped
+    networks:
+      - proxy-public
+    volumes:
+      - uptime-kuma-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime.rule=Host(`status.tudominio.com`)"
+      - "traefik.http.routers.uptime.entrypoints=websecure"
+      - "traefik.http.routers.uptime.tls.certresolver=letsencrypt"
+      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
+
+  # --- LOGS CENTRALIZADOS (Dozzle) ---
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: global-logs
+    restart: unless-stopped
+    networks:
+      - proxy-public
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.logs.rule=Host(`logs.tudominio.com`)"
+      - "traefik.http.routers.logs.entrypoints=websecure"
+      - "traefik.http.routers.logs.tls.certresolver=letsencrypt"
+
+networks:
+  proxy-public:
+    external: true
+
+volumes:
+  uptime-kuma-data:

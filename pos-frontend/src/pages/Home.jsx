@@ -27,18 +27,18 @@ const Home = () => {
     }, [])
 
   return (
-    <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden flex gap-3">
-      {/* Left Div */}
-      <div className="flex-[3]">
+    <section className="bg-[#1f1f1f] min-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden grid grid-cols-1 md:grid-cols-5 gap-3 px-4 md:px-8 pb-20">
+      {/* Left Column */}
+      <div className="md:col-span-3">
         <Greetings />
-        <div className="flex items-center w-full gap-3 px-8 mt-8">
+        <div className="flex items-center w-full gap-3 px-4 md:px-8 mt-8">
           <MiniCard title="Ganancias Totales" icon={<BsCashCoin />} number={metrics.revenue} footerNum={0} />
           <MiniCard title="En Progreso" icon={<GrInProgress />} number={metrics.activeOrders} footerNum={0} />
         </div>
         <RecentOrders />
       </div>
-      {/* Right Div */}
-      <div className="flex-[2]">
+      {/* Right Column */}
+      <div className="md:col-span-2">
         <PopularDishes />
       </div>
       <BottomNav />

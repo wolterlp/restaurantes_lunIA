@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getPerformanceStats, getEconomicStats } from "../https";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -7,10 +7,12 @@ import Metrics from "../components/dashboard/Metrics";
 import { useCurrency } from "../hooks/useCurrency";
 import { getShortId } from "../utils";
 import { FaChartPie, FaMoneyBillWave, FaExclamationTriangle, FaClock, FaFire, FaFileInvoiceDollar, FaCreditCard, FaUtensils, FaUserTie, FaStore } from "react-icons/fa";
+import { useTheme } from "../context/ThemeContext";
 
 const Reports = () => {
   const { formatCurrency } = useCurrency();
-  const [activeTab, setActiveTab] = useState("performance");
+  const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState("general");
   const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
   const [selectedPeriod, setSelectedPeriod] = useState("custom");
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -65,7 +67,7 @@ const Reports = () => {
     enabled: activeTab === "economic"
   });
 
-  if ((activeTab === "performance" && isLoadingPerf) || (activeTab === "economic" && isLoadingEco)) return <FullScreenLoader />;
+  const isLoadingScreen = (activeTab === "performance" && isLoadingPerf) || (activeTab === "economic" && isLoadingEco);
 
   const perfStats = performanceData?.data?.data || {};
   const { trafficLight, criticalOrders, peakHours, slowestDishes, comparison: perfComparison } = perfStats;
@@ -157,6 +159,59 @@ const Reports = () => {
       };
       return map[method] || method || "No especificado";
   };
+
+  const setDefaultsForTab = (tab) => {
+    const now = new Date();
+    if (tab === "general") {
+      const open = theme?.customization?.businessHours?.openTime || "10:00";
+      const close = theme?.customization?.businessHours?.closeTime || "22:00";
+      const paddingHours = 2;
+      const [openH, openM] = open.split(":").map(Number);
+      const [closeH, closeM] = close.split(":").map(Number);
+      const start = new Date(now);
+      start.setHours(openH, openM, 0, 0);
+      let end = new Date(now);
+      end.setHours(closeH, closeM, 0, 0);
+      start.setHours(start.getHours() - paddingHours);
+      end.setHours(end.getHours() + paddingHours);
+      if (end <= start) {
+        end.setDate(end.getDate() + 1);
+      }
+      setSelectedPeriod("custom");
+      setComparisonMode(false);
+      setDateRange({
+        startDate: start.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      });
+    } else if (tab === "performance") {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const end = new Date(now.getFullYear(), 11, 31);
+      setSelectedPeriod("year");
+      setComparisonMode(false);
+      setDateRange({
+        startDate: start.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      });
+    } else if (tab === "economic") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setSelectedPeriod("month");
+      setComparisonMode(false);
+      setDateRange({
+        startDate: start.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      });
+    }
+  };
+
+  useEffect(() => {
+    setDefaultsForTab(activeTab);
+    return () => {
+      // Al salir de la ventana, los estados se restablecen con los valores por defecto al volver a entrar.
+    };
+  }, [activeTab]);
+
+  if (isLoadingScreen) return <FullScreenLoader />;
 
   return (
     <div className="bg-[#1f1f1f] min-h-screen text-[#f5f5f5] p-6 pb-20 overflow-y-auto h-[calc(100vh-80px)]">
@@ -262,6 +317,27 @@ const Reports = () => {
           </button>
         </div>
       </div>
+      </div>
+
+      {/* Explicación del rango y guía rápida */}
+      <div className="container mx-auto py-2 px-6 md:px-4">
+        <div className="bg-[#1a1a1a] border border-gray-700 rounded-lg p-4 mb-6">
+          {activeTab === "general" && (
+            <p className="text-sm text-[#ababab]">
+              General: muestra la jornada según el horario configurado con margen ±2h. Rango usado: {dateRange.startDate} a {dateRange.endDate}. Puedes aplicar filtros recomendados, pero al salir regresa a estos valores por defecto.
+            </p>
+          )}
+          {activeTab === "performance" && (
+            <p className="text-sm text-[#ababab]">
+              Rendimiento: analiza el año actual completo. Rango usado: {dateRange.startDate} a {dateRange.endDate}. Puedes comparar y filtrar temporalmente; al salir, vuelve al año actual.
+            </p>
+          )}
+          {activeTab === "economic" && (
+            <p className="text-sm text-[#ababab]">
+              Económico: muestra datos del mes actual. Rango usado: {dateRange.startDate} a {dateRange.endDate}. Los cambios son temporales y se restablecen al cerrar esta ventana.
+            </p>
+          )}
+        </div>
       </div>
 
       {activeTab === "general" && <Metrics dateRange={dateRange} />}
@@ -594,7 +670,7 @@ const Reports = () => {
                                             style={{ width: `${(cat.totalSales / (salesOverview?.totalSales || 1)) * 100}%` }}
                                         ></div>
                                     </div>
-                                    <p className="text-xs text-gray-500">{cat.quantity} productos vendidos</p>>
+                                    <p className="text-xs text-gray-500">{cat.quantity} productos vendidos</p>
                                 </div>
                             ))
                         ) : (

@@ -6,6 +6,10 @@ const itemSchema = new mongoose.Schema({
   stock: { type: Number, default: 0 },
   prepTime: { type: Number, default: 15 }, // Estimated preparation time in minutes
   image: { type: String }, // URL or path to image
+  sku: { type: String },
+  barcode: { type: String },
+  unitCost: { type: Number, default: 0 },
+  minThreshold: { type: Number, default: 0 }
 });
 
 const categorySchema = new mongoose.Schema({

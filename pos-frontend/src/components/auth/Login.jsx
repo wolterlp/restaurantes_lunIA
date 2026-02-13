@@ -29,8 +29,8 @@ const Login = () => {
       onSuccess: (res) => {
           const { data } = res;
           console.log(data);
-          const { _id, name, email, phone, role } = data.data;
-          dispatch(setUser({ _id, name, email, phone, role }));
+          const { _id, name, email, phone, role, permissions } = data.data;
+          dispatch(setUser({ _id, name, email, phone, role, permissions }));
           if (role === "Admin") {
             navigate("/");
           } else if (role === "Waiter") {

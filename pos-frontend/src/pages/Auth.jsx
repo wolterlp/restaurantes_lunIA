@@ -42,7 +42,7 @@ const Auth = () => {
         <div className="flex flex-col items-center gap-2">
           {/* Main Logo - Shows configured logo if exists, else shows LunIA logo */}
           {theme?.logo ? (
-              <img src={theme.logo} alt="Restaurant Logo" className="h-20 w-auto object-contain" />
+              <img src={theme.logo} alt="Restaurant Logo" className="h-20 w-auto object-contain rounded-lg" />
           ) : (
               <img src={logo} alt="LunIA Logo" className="h-14 w-14 border-2 rounded-full p-1" />
           )}

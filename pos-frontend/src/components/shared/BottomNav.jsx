@@ -88,7 +88,7 @@ const BottomNav = () => {
       deliveryAddress: orderType === "Delivery" ? deliveryAddress : ""
     }));
 
-    if (orderType === "Delivery") {
+    if (orderType === "Delivery" || orderType === "Takeaway") {
       navigate("/menu");
     } else {
       navigate("/tables");
@@ -155,6 +155,12 @@ const BottomNav = () => {
             Para Mesa
           </button>
           <button 
+            onClick={() => setOrderType("Takeaway")}
+            className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Takeaway" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
+          >
+            Para Llevar
+          </button>
+          <button 
             onClick={() => setOrderType("Delivery")}
             className={`flex-1 py-2 rounded-md transition-colors ${orderType === "Delivery" ? "bg-[#F6B100] text-[#1f1f1f] font-bold" : "text-[#ababab] hover:text-white"}`}
           >
@@ -210,7 +216,7 @@ const BottomNav = () => {
               <button onClick={increment} className="text-yellow-500 text-2xl">&#43;</button>
             </div>
           </div>
-        ) : (
+        ) : orderType === "Delivery" ? (
           <div>
             <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">Dirección de Entrega</label>
             <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
@@ -222,7 +228,7 @@ const BottomNav = () => {
               />
             </div>
           </div>
-        )}
+        ) : null}
         <button onClick={handleCreateOrder} className="w-full bg-[#F6B100] text-[#f5f5f5] rounded-lg py-3 mt-8 hover:bg-yellow-700 font-bold uppercase tracking-wider">
           {orderType === "Dine-In" ? "Continuar a Mesas" : "Continuar al Menú"}
         </button>

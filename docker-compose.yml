@@ -1,0 +1,86 @@
+services:
+  # Base de Datos (Aislada por stack)
+  mongodb:
+    image: mongo:6.0
+    container_name: pos-mongodb-${EMPRESA_ID}
+    restart: unless-stopped
+    networks:
+      - pos-internal
+    volumes:
+      - mongodb_data:/data/db
+
+  # Backup Automático para MongoDB
+  mongo-backup:
+    image: mcuadros/mongodb-backup-s3:latest # O una similar con soporte local
+    container_name: pos-backup-${EMPRESA_ID}
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    networks:
+      - pos-internal
+    environment:
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - BACKUP_INTERVAL=1440 # Cada 24 horas (en minutos)
+      - BACKUP_CLEANUP_DAYS=7
+    volumes:
+      - ./backups:/backup
+
+  # Backend (Node.js)
+  backend:
+    build:
+      context: ./pos-backend
+      dockerfile: Dockerfile
+    container_name: pos-backend-${EMPRESA_ID}
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    networks:
+      - pos-internal
+      - proxy-public # Necesario para salir a internet y para el proxy global
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/pos-db
+      - LICENCIAS_URL=${LICENCIAS_URL}
+      - EMPRESA_ID=${EMPRESA_ID}
+      - LICENSE_KEY=${LICENSE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+
+  # Frontend (Nginx + React build)
+  frontend:
+    build:
+      context: ./pos-frontend
+      dockerfile: Dockerfile
+    container_name: pos-frontend-${EMPRESA_ID}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - pos-internal
+      - proxy-public # Para ser accesible desde el proxy global
+    environment:
+      - VITE_API_URL=/api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pos-${EMPRESA_ID}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.pos-${EMPRESA_ID}.entrypoints=websecure"
+      - "traefik.http.routers.pos-${EMPRESA_ID}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pos-${EMPRESA_ID}.loadbalancer.server.port=80"
+
+networks:
+  pos-internal:
+    driver: bridge
+  proxy-public:
+    external: true
+
+volumes:
+  mongodb_data:
+    name: pos_mongodb_data_${EMPRESA_ID}
+  uploads_data:
+    name: pos_uploads_data_${EMPRESA_ID}
+  logs_data:
+    name: pos_logs_data_${EMPRESA_ID}

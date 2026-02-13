@@ -14,6 +14,7 @@ import Invoice from "../invoice/Invoice";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useCurrency } from "../../hooks/useCurrency";
+import { getShortId } from "../../utils/index";
 
 const Bill = ({ orderId }) => {
   const dispatch = useDispatch();
@@ -74,6 +75,7 @@ const Bill = ({ orderId }) => {
         phone: customerData.customerPhone || "N/A",
         guests: customerData.guests || 0,
       },
+      table: customerData.table || null,
       items: cartData,
       bills: {
         total,
@@ -95,6 +97,7 @@ const Bill = ({ orderId }) => {
   };
 
   const handlePlaceOrder = async () => {
+    if (orderMutation.isPending) return;
     console.log("--- START PLACE ORDER ---");
     console.log("Cart Data Length:", cartData.length);
     console.log("Customer Data:", customerData);
@@ -263,7 +266,8 @@ const Bill = ({ orderId }) => {
       // The backend should return the saved paymentDetails
       const finalOrderInfo = {
           ...data,
-          paymentDetails: variables.paymentDetails
+          paymentDetails: variables.paymentDetails,
+          ...(variables.orderType === "Dine-In" && customerData.table ? { table: customerData.table } : {})
       };
 
       setOrderInfo(finalOrderInfo);
@@ -512,9 +516,10 @@ const Bill = ({ orderId }) => {
         )}
         <button
           onClick={handlePlaceOrder}
-          className="bg-[#f6b100] px-4 py-2 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg"
+          disabled={orderMutation.isPending}
+          className={`px-4 py-2 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg ${orderMutation.isPending ? "bg-[#8c7426] cursor-not-allowed" : "bg-[#f6b100]"}`}
         >
-          {orderId ? "Agregar al Pedido" : "Realizar Pedido"}
+          {orderId ? "Agregar al Pedido" : (orderMutation.isPending ? "Procesando..." : "Realizar Pedido")}
         </button>
       </div>
 

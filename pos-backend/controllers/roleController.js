@@ -8,21 +8,36 @@ const PERMISSIONS = {
     MANAGE_CASH: "MANAGE_CASH",
     MANAGE_MENU: "MANAGE_MENU", // For future use
     MANAGE_ORDERS: "MANAGE_ORDERS",
-    VIEW_REPORTS: "VIEW_REPORTS"
+    VIEW_REPORTS: "VIEW_REPORTS",
+    VIEW_DELIVERY: "VIEW_DELIVERY",
+    VIEW_COMPLETED: "VIEW_COMPLETED",
+    MANAGE_INVENTORY: "MANAGE_INVENTORY",
+    MANAGE_SUPPLIERS: "MANAGE_SUPPLIERS"
 };
 
 const DEFAULT_ROLES = [
     {
         name: "Admin",
-        permissions: [PERMISSIONS.MANAGE_USERS, PERMISSIONS.MANAGE_SETTINGS, PERMISSIONS.MANAGE_CASH, PERMISSIONS.MANAGE_MENU, PERMISSIONS.MANAGE_ORDERS, PERMISSIONS.VIEW_REPORTS]
+        permissions: [
+            PERMISSIONS.MANAGE_USERS, 
+            PERMISSIONS.MANAGE_SETTINGS, 
+            PERMISSIONS.MANAGE_CASH, 
+            PERMISSIONS.MANAGE_MENU, 
+            PERMISSIONS.MANAGE_ORDERS, 
+            PERMISSIONS.VIEW_REPORTS,
+            PERMISSIONS.VIEW_COMPLETED,
+            PERMISSIONS.VIEW_DELIVERY,
+            PERMISSIONS.MANAGE_INVENTORY,
+            PERMISSIONS.MANAGE_SUPPLIERS
+        ]
     },
     {
         name: "Waiter",
-        permissions: [PERMISSIONS.MANAGE_ORDERS]
+        permissions: [PERMISSIONS.MANAGE_ORDERS, PERMISSIONS.VIEW_COMPLETED]
     },
     {
         name: "Cashier",
-        permissions: [PERMISSIONS.MANAGE_CASH]
+        permissions: [PERMISSIONS.MANAGE_CASH, PERMISSIONS.MANAGE_ORDERS, PERMISSIONS.VIEW_COMPLETED, PERMISSIONS.VIEW_DELIVERY]
     },
     {
         name: "Kitchen",
@@ -30,7 +45,7 @@ const DEFAULT_ROLES = [
     },
     {
         name: "Delivery",
-        permissions: []
+        permissions: [PERMISSIONS.VIEW_DELIVERY]
     }
 ];
 
@@ -49,6 +64,14 @@ const getRoles = async (req, res, next) => {
                 const newRole = await Role.create(defaultRole);
                 roles.push(newRole);
             }
+        }
+        
+        // Merge new default permissions into existing roles
+        for (const defaultRole of DEFAULT_ROLES) {
+            await Role.updateOne(
+                { name: defaultRole.name },
+                { $addToSet: { permissions: { $each: defaultRole.permissions } } }
+            );
         }
 
         res.status(200).json({ success: true, data: roles });

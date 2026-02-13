@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
     },
     orderType: {
         type: String,
-        enum: ["Dine-In", "Delivery"],
+        enum: ["Dine-In", "Delivery", "Takeaway"],
         default: "Dine-In"
     },
     deliveryAddress: { type: String },
@@ -36,6 +36,7 @@ const orderSchema = new mongoose.Schema({
         pricePerQuantity: { type: Number, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true }, // Total price for this item line (pricePerQuantity * quantity)
+        requiresPreparation: { type: Boolean, default: true },
         status: { 
             type: String, 
             enum: ["Pending", "In Progress", "Ready", "Served"], 

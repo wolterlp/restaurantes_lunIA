@@ -4,6 +4,7 @@ const Role = require("../models/roleModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
+const { checkLoginAllowedByLicense } = require("../helpers/checkLoginAllowedByLicense");
 
 const register = async (req, res, next) => {
     try {
@@ -61,11 +62,12 @@ const register = async (req, res, next) => {
             expiresIn : '1d'
         });
 
+        const isProd = config.nodeEnv === 'production';
         res.cookie('accessToken', accessToken, {
             maxAge: 1000 * 60 * 60 *24 * 30,
             httpOnly: true,
-            sameSite: 'none',
-            secure: true
+            sameSite: isProd ? 'none' : 'lax',
+            secure: isProd
         })
 
         res.status(201).json({success: true, message: "New user created!", data: newUser});
@@ -105,15 +107,22 @@ const login = async (req, res, next) => {
             return next(error);
         }
 
+        const allowed = await checkLoginAllowedByLicense(isUserPresent.role);
+        if (!allowed) {
+            const error = createHttpError(403, "Perfil no habilitado por la licencia");
+            return next(error);
+        }
+
         const accessToken = jwt.sign({_id: isUserPresent._id}, config.accessTokenSecret, {
             expiresIn : '1d'
         });
 
+        const isProdLogin = config.nodeEnv === 'production';
         res.cookie('accessToken', accessToken, {
             maxAge: 1000 * 60 * 60 *24 * 30,
             httpOnly: true,
-            sameSite: 'none',
-            secure: true
+            sameSite: isProdLogin ? 'none' : 'lax',
+            secure: isProdLogin
         })
 
         // Fetch permissions for the user's role

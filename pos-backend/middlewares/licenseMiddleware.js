@@ -3,6 +3,9 @@ const createHttpError = require("http-errors");
 
 const licenseGuard = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === "Cashier") {
+      return next();
+    }
     const config = await Restaurant.findOne();
     if (!config || !config.license) {
       return next(createHttpError(403, "Licencia no configurada en el servidor"));

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { FaSearch, FaEllipsisH } from "react-icons/fa";
 import { FaUserFriends, FaChartBar, FaUserCircle } from "react-icons/fa";
 import { FaCog } from "react-icons/fa";
-import logo from "../../assets/images/branding/logo.png";
 import { useDispatch, useSelector } from "react-redux";
 import { IoLogOut } from "react-icons/io5";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { logout, getOrders, getTables } from "../../https";
+import { logout, getOrders, getTables, getLicenseStatus } from "../../https";
 import { removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
@@ -165,6 +164,23 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showResults, showLogoMenu]);
 
+  const { data: licenseStatus } = useQuery({
+    queryKey: ["licenseStatus"],
+    queryFn: async () => {
+      const res = await getLicenseStatus();
+      return res.data?.data || null;
+    },
+    refetchInterval: 60 * 1000
+  });
+
+  const ringClass = licenseStatus?.mode === 'offline'
+    ? 'ring-2 ring-[#ecab0f]'
+    : licenseStatus?.mode === 'online'
+      ? 'ring-2 ring-green-500'
+      : licenseStatus?.mode === 'invalid'
+        ? 'ring-2 ring-red-500'
+        : '';
+
   return (
     <header className="flex justify-between items-center py-3 px-4 md:px-8 bg-[#1a1a1a] relative" style={{ backgroundColor: theme?.secondaryColor }}>
       {/* LOGO AND MENU */}
@@ -173,7 +189,7 @@ const Header = () => {
           {theme?.logo ? (
               <img src={theme.logo} className="h-8 w-8 md:h-10 md:w-10 object-cover rounded-full border border-[#3a3a3a]" alt="Restaurant Logo" />
           ) : (
-              <img src={logo} className="h-6 w-6 md:h-8 md:w-8" alt="lunia logo" />
+              <img src={logoLunia} className="h-6 w-6 md:h-8 md:w-8" alt="LunIA logo" />
           )}
           <h1 className="hidden sm:block text-sm md:text-lg font-semibold text-[#f5f5f5] tracking-wide whitespace-nowrap">
             {theme?.name || "LunIA"}
@@ -229,7 +245,7 @@ const Header = () => {
         {/* LUNIA DEVELOPER LOGO (Trigger Menu) */}
         <div 
           onClick={() => setShowLogoMenu(!showLogoMenu)} 
-          className="rounded-full select-none flex items-center justify-center w-10 h-10 md:w-14 md:h-14 overflow-hidden shadow-md cursor-pointer hover:ring-2 hover:ring-[#ecab0f] transition-all" 
+          className={`rounded-full select-none flex items-center justify-center w-10 h-10 md:w-14 md:h-14 overflow-hidden shadow-md cursor-pointer transition-all ${ringClass}`} 
           title="Menú de opciones"
         >
             <img src={logoLunia} alt="LunIA" className="h-full w-full object-cover" />

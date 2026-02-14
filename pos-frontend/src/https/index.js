@@ -53,6 +53,7 @@ export const getPopularDishes = (params) => axiosWrapper.get("/api/metrics/popul
 
 // Restaurant Config Endpoints
 export const getRestaurantConfig = () => axiosWrapper.get("/api/restaurant/config");
+export const getLicenseStatus = () => axiosWrapper.get("/api/restaurant/license/status");
 export const updateRestaurantConfig = (data) => axiosWrapper.put("/api/restaurant/config", data);
 
 // Cash Endpoints

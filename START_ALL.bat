@@ -25,7 +25,7 @@ start "Backend POS" cmd /k "cd pos-backend && npm run dev"
 
 echo.
 echo 3. Iniciando Frontend POS...
-start "Frontend POS" cmd /k "cd pos-frontend && npm run dev"
+start "Frontend POS" cmd /k "cd pos-frontend && npm run dev  -- --host"
 
 echo.
 echo ===================================================

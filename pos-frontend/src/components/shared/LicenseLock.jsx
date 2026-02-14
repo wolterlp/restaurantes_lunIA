@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { axiosWrapper } from '../../https/axiosWrapper';
 import { FaKey, FaExclamationTriangle, FaCheckCircle, FaLock } from 'react-icons/fa';
 import { BsShieldLockFill } from 'react-icons/bs';
 import { useSelector } from 'react-redux';
@@ -16,14 +16,14 @@ const LicenseLock = () => {
     const { data: config, isLoading } = useQuery({
         queryKey: ['restaurantConfig'],
         queryFn: async () => {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/restaurant/config`);
+            const res = await axiosWrapper.get(`/api/restaurant/config`);
             return res.data.data || null;
         }
     });
 
     const activateMutation = useMutation({
         mutationFn: async (key) => {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/restaurant/license/activate`, { licenseKey: key });
+            const res = await axiosWrapper.post(`/api/restaurant/license/activate`, { licenseKey: key });
             return res.data;
         },
         onSuccess: () => {
@@ -50,10 +50,7 @@ const LicenseLock = () => {
     const warningDays = config?.customization?.licenseWarningDays || 7;
     const daysRemaining = license?.expirationDate ? Math.ceil((new Date(license.expirationDate) - new Date()) / (1000 * 60 * 60 * 24)) : null;
     
-    // Allow acceso a la página de autenticación cuando no hay sesión (no bloquear el login)
-    if (!isAuth) {
-        return null;
-    }
+    // Mostrar overlay aun sin sesión para permitir activar cuando la licencia está inactiva o no existe
 
     // If valid, don't render anything (or render children if used as wrapper)
     if (isLicenseValid) {
@@ -115,7 +112,7 @@ const LicenseLock = () => {
                         </div>
                     )}
 
-                    {isAuth && canManageSettings ? (
+                    {true ? (
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Clave de Licencia</label>

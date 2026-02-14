@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import restaurant from "../assets/images/auth/restaurant-img.jpg"
-import logo from "../assets/images/branding/logo.png"
 import logoLunia from "../assets/images/branding/logolunia.png"
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
@@ -44,7 +43,7 @@ const Auth = () => {
           {theme?.logo ? (
               <img src={theme.logo} alt="Restaurant Logo" className="h-20 w-auto object-contain rounded-lg" />
           ) : (
-              <img src={logo} alt="LunIA Logo" className="h-14 w-14 border-2 rounded-full p-1" />
+              <img src={logoLunia} alt="LunIA Logo" className="h-14 w-14 border-2 rounded-full p-1" />
           )}
           <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">{theme?.name || "LunIA"}</h1>
         </div>

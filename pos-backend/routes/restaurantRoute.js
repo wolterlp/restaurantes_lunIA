@@ -1,5 +1,5 @@
 const express = require("express");
-const { getConfig, updateConfig, activateLicense } = require("../controllers/restaurantController");
+const { getConfig, updateConfig, activateLicense, getLicenseStatus } = require("../controllers/restaurantController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
 const verifyPermission = require("../middlewares/permissionMiddleware");
 
@@ -7,9 +7,12 @@ const router = express.Router();
 
 // Public route to get config (for login screen etc)
 router.get("/config", getConfig);
+router.get("/license/status", getLicenseStatus);
 
-// Activar licencia: protegido para Admin
-router.post("/license/activate", isVerifiedUser, verifyPermission("MANAGE_SETTINGS"), activateLicense);
+// Activar licencia:
+// - Si la licencia está 'inactive' o no existe, permite acceso público desde Auth/overlay
+// - Si está 'active' o 'pending_payment', el controlador exigirá Admin
+router.post("/license/activate", activateLicense);
 
 // Protected route to update config (Admin only)
 router.put("/config", isVerifiedUser, verifyPermission("MANAGE_SETTINGS"), updateConfig);

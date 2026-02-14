@@ -57,12 +57,18 @@ const restaurantSchema = new mongoose.Schema({
     // Licenciamiento
     license: {
         key: { type: String, default: "" },
-        status: { type: String, enum: ["active", "suspended", "expired", "invalid", "none"], default: "none" },
+        status: { type: String, enum: ["active", "pending_payment", "inactive", "expired", "invalid", "none"], default: "none" },
         expirationDate: { type: Date },
         lastValidation: { type: Date },
         maxOfflineHours: { type: Number, default: 72 }, // Policy from server
         localSignature: { type: String }, // Integrity check
-        features: [{ type: String }] // Para futuros flags de features
+        allowedRoles: [{ type: String }],
+        features: [{ type: String }], // Para futuros flags de features
+        // Secret del servidor de licencias almacenado cifrado (AES-256-GCM)
+        serverSecretEnc: { type: String, default: "" },
+        serverSecretIv: { type: String, default: "" },
+        serverSecretTag: { type: String, default: "" },
+        serverSecretAlgo: { type: String, default: "AES-256-GCM" }
     },
     // Dispositivos
     devices: {

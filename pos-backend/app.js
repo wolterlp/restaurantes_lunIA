@@ -8,6 +8,7 @@ const globalErrorHandler = require("./middlewares/globalErrorHandler");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const startAutoUpdateService = require("./services/autoUpdateService");
+const localLicenseService = require("./services/localLicenseService");
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +35,19 @@ io.on("connection", (socket) => {
         console.log("Client disconnected:", socket.id);
     });
 });
+
+// License Monitor: validar licencia al inicio y cada hora
+const startLicenseMonitor = () => {
+    const run = async () => {
+        try {
+            await localLicenseService.checkLicenseStatus();
+        } catch (e) {
+            console.error("License monitor error:", e.message);
+        }
+    };
+    run();
+    setInterval(run, 60 * 60 * 1000);
+};
 
 // Middlewares
 app.use(cors({
@@ -74,4 +88,5 @@ app.use(globalErrorHandler);
 server.listen(PORT, () => {
     console.log(`☑️  POS Server is listening on port ${PORT}`);
     startAutoUpdateService(io);
+    startLicenseMonitor();
 })

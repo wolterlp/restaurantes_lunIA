@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Socket.io Setup
 const io = new Server(server, {
     cors: {
-        origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'],
+        origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://192.168.200.103:5173'],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"]
     }
@@ -52,7 +52,7 @@ const startLicenseMonitor = () => {
 // Middlewares
 app.use(cors({
     credentials: true,
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176']
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://192.168.200.103:5173']
 }))
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())

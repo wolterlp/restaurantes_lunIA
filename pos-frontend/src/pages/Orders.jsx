@@ -80,6 +80,7 @@ const Orders = () => {
   const businessWindow = useMemo(() => {
     const open = theme?.customization?.businessHours?.openTime || "10:00";
     const close = theme?.customization?.businessHours?.closeTime || "22:00";
+    const bufferHours = Number(theme?.customization?.businessHours?.viewBufferHours) || 0;
     const [openH, openM] = open.split(":").map(Number);
     const [closeH, closeM] = close.split(":").map(Number);
     const now = new Date();
@@ -90,8 +91,8 @@ const Orders = () => {
     if (closeDT <= openDT) {
       closeDT.setDate(closeDT.getDate() + 1);
     }
-    const start = new Date(openDT.getTime() - 2 * 60 * 60 * 1000);
-    const end = new Date(closeDT.getTime() + 2 * 60 * 60 * 1000);
+    const start = new Date(openDT.getTime() - bufferHours * 60 * 60 * 1000);
+    const end = new Date(closeDT.getTime() + bufferHours * 60 * 60 * 1000);
     return { start, end };
   }, [theme]);
 
@@ -134,7 +135,8 @@ const Orders = () => {
         if (status === "all") return (role === "Waiter" || role === "Kitchen") ? order.orderStatus !== "Completed" && order.orderStatus !== "Cancelled" : true;
         if (status === "pending") return order.orderStatus === "Pending";
         if (status === "progress") return order.orderStatus === "In Progress";
-        if (status === "ready") return order.orderStatus === "Ready";
+        if (status === "ready") return role === "Waiter" ? order.items?.some(i => i.status === "Ready") : order.orderStatus === "Ready";
+        if (status === "served") return role === "Waiter" && (order.items?.length || 0) > 0 && order.items.every(i => i.status === "Served") && order.orderType !== "Delivery" && order.orderStatus !== "Completed" && order.orderStatus !== "Cancelled";
         return true;
       })
       .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
@@ -183,6 +185,11 @@ const Orders = () => {
                 <button onClick={() => setStatus("ready")} className={`text-[#ababab] text-xs md:text-lg whitespace-nowrap ${status === "ready" && "bg-[#383838] text-[#f5f5f5]"} rounded-lg px-3 md:px-5 py-2 font-semibold transition-colors`}>
                   {role === "Waiter" ? "Por entregar" : "Listos"}
                 </button>
+                {role === "Waiter" && (
+                  <button onClick={() => setStatus("served")} className={`text-[#ababab] text-xs md:text-lg whitespace-nowrap ${status === "served" && "bg-[#383838] text-[#f5f5f5]"} rounded-lg px-3 md:px-5 py-2 font-semibold transition-colors`}>
+                    Servidos
+                  </button>
+                )}
                 {(role === "Admin" || role === "Delivery" || permissions?.includes("VIEW_DELIVERY")) && (
                 <button onClick={() => setStatus("delivery")} className={`text-[#ababab] text-xs md:text-lg whitespace-nowrap ${status === "delivery" && "bg-[#383838] text-[#f5f5f5]"} rounded-lg px-3 md:px-5 py-2 font-semibold transition-colors`}>
                   Domicilio

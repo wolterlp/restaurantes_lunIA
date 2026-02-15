@@ -150,71 +150,31 @@ const Bill = ({ orderId }) => {
       return;
     }
 
-    // Payment validation only for non-Waiters
-    if (role !== "Waiter") {
-        if (!paymentMethod) {
-          console.log("Error: No payment method selected");
-          enqueueSnackbar("¡Por favor selecciona un método de pago!", {
-            variant: "warning",
-          });
-          return;
-        }
-
-        // Validaciones de pago
+    // Validaciones de pago SOLO si se seleccionó método
+    if (paymentMethod) {
         if (paymentMethod === "Cash" && parseFloat(cashReceived) < grandTotal) {
             enqueueSnackbar("¡Dinero recibido insuficiente!", { variant: "warning" });
             return;
         }
-
         if (paymentMethod === "Online") {
             if (!transferPlatform) {
                 enqueueSnackbar("¡Selecciona la plataforma de transferencia!", { variant: "warning" });
                 return;
             }
-            
-            if (isMixedPayment) {
-                 if (!isPaid) {
-                    enqueueSnackbar(`¡Pago incompleto! Faltan $${remaining}`, { variant: "warning" });
-                    return;
-                 }
+            if (isMixedPayment && !isPaid) {
+                enqueueSnackbar(`¡Pago incompleto! Faltan $${remaining}`, { variant: "warning" });
+                return;
             }
         }
     }
 
-    // Preparar datos de pago
+    // Preparar datos de pago (siempre pendiente al crear pedido)
     let paymentDetails = {
         cashReceived: 0,
         change: 0,
         transferPlatform: "",
         transferAmount: 0
     };
-
-    if (role !== "Waiter") {
-        if (paymentMethod === "Cash") {
-            paymentDetails = {
-                cashReceived: parseFloat(cashReceived) || 0,
-                change: parseFloat(change),
-                transferPlatform: "",
-                transferAmount: 0
-            };
-        } else if (paymentMethod === "Online") {
-            if (isMixedPayment) {
-                paymentDetails = {
-                    cashReceived: parseFloat(cashReceived) || 0,
-                    change: parseFloat(change) > 0 ? parseFloat(change) : 0,
-                    transferPlatform: transferPlatform,
-                    transferAmount: parseFloat(transferAmount) || 0
-                };
-            } else {
-                 paymentDetails = {
-                    cashReceived: 0,
-                    change: 0,
-                    transferPlatform: transferPlatform,
-                    transferAmount: grandTotal
-                };
-            }
-        }
-    }
 
     // Place the order
     const orderData = {
@@ -234,7 +194,7 @@ const Bill = ({ orderId }) => {
       },
       items: cartData,
       table: customerData.table?.tableId || null,
-      paymentMethod: role === "Waiter" ? "Pending" : paymentMethod,
+      paymentMethod: "Pending",
       paymentDetails: paymentDetails, 
     };
     
@@ -252,7 +212,8 @@ const Bill = ({ orderId }) => {
     },
     onError: (error) => {
         console.log(error);
-        enqueueSnackbar(error?.message || "¡Error al agregar productos!", { variant: "error" });
+        const msg = error?.response?.data?.message || "¡Error al agregar productos!";
+        enqueueSnackbar(msg, { variant: "error" });
     }
   });
 
@@ -298,7 +259,8 @@ const Bill = ({ orderId }) => {
     },
     onError: (error) => {
       console.log(error);
-      enqueueSnackbar(error?.message || "¡Error al realizar el pedido!", {
+      const msg = error?.response?.data?.message || "¡Error al realizar el pedido!";
+      enqueueSnackbar(msg, {
         variant: "error",
       });
     },

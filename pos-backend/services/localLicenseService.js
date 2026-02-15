@@ -47,7 +47,10 @@ const getServerSecretFromDB = async () => {
 const verifyServerSignature = async (dataObj, signatureHex, algorithm) => {
     try {
         if (!signatureHex) return false;
-        const dataStr = `${dataObj.licenseKey}|${dataObj.expirationDate}|${dataObj.maxOfflineHours}`;
+        const expISO = dataObj.expirationDate
+            ? new Date(dataObj.expirationDate).toISOString()
+            : '';
+        const dataStr = `${dataObj.licenseKey}|${expISO}|${dataObj.maxOfflineHours}`;
         if (algorithm === 'HMAC-SHA256') {
             const secret = await getServerSecretFromDB();
             if (!secret) return false;
@@ -70,6 +73,33 @@ const generateLocalSignature = (key, expirationDate, status, maxOfflineHours) =>
     return crypto.createHmac('sha256', LOCAL_SECRET).update(data).digest('hex');
 };
 
+// Helper: Generate candidate URLs for validation (dev-friendly fallbacks)
+const getCandidateLicenseUrls = () => {
+    const urls = [];
+    const primary = LICENSE_SERVER_URL;
+    if (primary) urls.push(primary);
+    // Add common local fallbacks to tolerate dev setups
+    if (!urls.includes('http://localhost:5001/api/licenses')) urls.push('http://localhost:5001/api/licenses');
+    if (!urls.includes('http://localhost:5171/api/licenses')) urls.push('http://localhost:5171/api/licenses');
+    return urls;
+};
+
+// Helper: POST to /validate with fallback over candidate URLs
+const validateWithFallback = async (payload) => {
+    const candidates = getCandidateLicenseUrls();
+    let lastError = null;
+    for (const base of candidates) {
+        try {
+            const res = await axios.post(`${base}/validate`, payload);
+            return { ok: true, response: res, base };
+        } catch (err) {
+            lastError = err;
+            continue;
+        }
+    }
+    return { ok: false, error: lastError };
+};
+
 /**
  * Validate current license against the License Server
  * and update local status
@@ -83,10 +113,12 @@ const checkLicenseStatus = async () => {
              return { valid: false, status: 'none', reason: 'No license key configured' };
         }
 
-        const response = await axios.post(`${LICENSE_SERVER_URL}/validate`, {
+        const result = await validateWithFallback({
             licenseKey: restaurant.license.key,
             hardwareId: HARDWARE_ID
         });
+        if (!result.ok) throw result.error;
+        const response = result.response;
 
         if (response.data.success) {
             
@@ -209,11 +241,16 @@ const checkLicenseStatus = async () => {
  */
 const activateLicense = async (licenseKey) => {
     try {
-        // Validate with server first
-        const response = await axios.post(`${LICENSE_SERVER_URL}/validate`, {
+        // Validate with server first (with fallback)
+        const result = await validateWithFallback({
             licenseKey: licenseKey,
             hardwareId: HARDWARE_ID
         });
+        if (!result.ok) {
+            const msg = result.error?.response?.data?.message || result.error?.message || 'License Server not reachable';
+            return { success: false, message: msg };
+        }
+        const response = result.response;
 
         if (response.data.success) {
              let restaurant = await Restaurant.findOne();
@@ -221,14 +258,18 @@ const activateLicense = async (licenseKey) => {
                  restaurant = new Restaurant();
              }
              
+             const serverData = response.data.data;
+             const offlineLimit = serverData.maxOfflineHours || 72;
+             const serverStatus = serverData.status || 'active';
+             
              restaurant.license = {
                  key: licenseKey,
-                 status: 'active',
-                 expirationDate: response.data.data.expirationDate,
+                 status: serverStatus,
+                 expirationDate: serverData.expirationDate,
                  lastValidation: new Date(),
-                 maxOfflineHours: response.data.data.maxOfflineHours || 72,
-                 allowedRoles: Array.isArray(response.data.data.allowedRoles) && response.data.data.allowedRoles.length
-                   ? response.data.data.allowedRoles
+                 maxOfflineHours: offlineLimit,
+                 allowedRoles: Array.isArray(serverData.allowedRoles) && serverData.allowedRoles.length
+                   ? serverData.allowedRoles
                    : ['Admin','Cashier']
              };
 
@@ -236,8 +277,8 @@ const activateLicense = async (licenseKey) => {
              restaurant.license.localSignature = generateLocalSignature(
                 restaurant.license.key, 
                 restaurant.license.expirationDate,
-                'active',
-                restaurant.license.maxOfflineHours
+                serverStatus,
+                offlineLimit
              );
              
              await restaurant.save();

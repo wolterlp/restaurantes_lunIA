@@ -100,6 +100,9 @@ const OrderCard = ({ order, id }) => {
   };
   
   const hasReadyItems = order.items?.some(i => i.status === "Ready");
+  const allServed = (order.items?.length || 0) > 0 && order.items.every(i => i.status === "Served");
+  const pm = String(order.paymentMethod || "").trim().toLowerCase();
+  const isPaymentPending = !pm || pm === "pending" || pm === "pendiente" || pm === "sin pago" || pm === "sinpago";
 
   return (
     <div id={id} className={`w-full bg-[#262626] p-3 md:p-4 rounded-lg mb-3 md:mb-4 shadow-lg relative ${getBorderColor() === "border-[#333]" ? "border border-[#333]" : getBorderColor()}`}>
@@ -157,12 +160,22 @@ const OrderCard = ({ order, id }) => {
                   <FaCircle size={18} />
                 </div>
             )}
+            {role === "Waiter" && allServed && order.orderStatus !== "Completed" && (
+              <span className="text-green-300 bg-[#2e4a40] px-2 py-1 rounded text-[10px] font-bold uppercase">
+                Todo servido
+              </span>
+            )}
+            {(role === "Cashier" || role === "Admin") && isPaymentPending && order.orderStatus !== "Cancelled" && (
+              <span className="text-red-300 bg-[#3a1c1c] px-2 py-1 rounded text-[10px] font-bold uppercase">
+                Pago Pendiente
+              </span>
+            )}
           </div>
         </div>
       </div>
       
-      {/* Kitchen & Waiter View: Item List with Timers */}
-      {(role === "Admin" || role === "Kitchen" || role === "Waiter") && order.orderStatus !== "Completed" && (
+      {/* Kitchen & Cashier/Waiter/Admin View: Item List with Timers */}
+      {(role === "Admin" || role === "Kitchen" || role === "Waiter" || role === "Cashier") && order.orderStatus !== "Completed" && (
           <div className="mt-4 bg-[#1f1f1f] rounded-lg p-3">
               <div className="flex justify-between items-center mb-2">
                   <h3 className="text-[#ababab] text-xs font-bold uppercase">Platos / Productos</h3>
@@ -327,8 +340,10 @@ const OrderCard = ({ order, id }) => {
           </button>
         )}
 
-        {/* Cashier Actions - For Dine-in/Pickup */}
-        {(role === "Cashier" || role === "Admin") && (order.orderStatus === "Pending" || order.orderStatus === "In Progress" || order.orderStatus === "Ready" || order.orderStatus === "Delivered") && (
+        {/* Cashier/Admin: mostrar cobrar cuando pago pendiente o no definido */}
+        {(role === "Cashier" || role === "Admin") 
+          && isPaymentPending
+          && (order.orderStatus === "Pending" || order.orderStatus === "In Progress" || order.orderStatus === "Ready" || order.orderStatus === "Delivered") && (
           <button
             onClick={() => setShowPaymentModal(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm shadow-md"
@@ -348,7 +363,7 @@ const OrderCard = ({ order, id }) => {
         )}
       </div>
 
-      {showPaymentModal && (
+      {showPaymentModal && (role === "Cashier" || role === "Admin") && (
           <PaymentModal order={order} onClose={() => setShowPaymentModal(false)} />
       )}
 

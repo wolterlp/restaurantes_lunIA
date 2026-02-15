@@ -473,9 +473,9 @@ const serveAllReadyItems = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        // RBAC: Only Waiter (and Admin) should serve items
-        if (req.user.role !== "Waiter" && req.user.role !== "Admin") {
-            return next(createHttpError(403, "Acceso denegado: ¡Solo los meseros pueden servir platos!"));
+        // RBAC: Waiter, Cashier y Admin pueden servir ítems listos
+        if (req.user.role !== "Waiter" && req.user.role !== "Cashier" && req.user.role !== "Admin") {
+            return next(createHttpError(403, "Acceso denegado: ¡Solo mesero/cajero/administrador pueden servir platos!"));
         }
 
         const order = await Order.findById(id);

@@ -35,9 +35,9 @@ const getLicenseStatus = async (req, res, next) => {
     try {
         const result = await localLicenseService.checkLicenseStatus();
         const mode = result.valid && result.data && result.data.warning === 'Offline Mode' ? 'offline' : (result.valid ? 'online' : 'invalid');
-        res.status(200).json({ success: true, data: { valid: result.valid, mode, status: result.status } });
+        res.status(200).json({ success: true, data: { valid: result.valid, mode, status: result.status, reason: result.reason } });
     } catch (error) {
-        res.status(200).json({ success: true, data: { valid: false, mode: 'invalid', status: 'inactive' } });
+        res.status(200).json({ success: true, data: { valid: false, mode: 'invalid', status: 'inactive', reason: error.message } });
     }
 };
 
@@ -141,3 +141,47 @@ const updateConfig = async (req, res, next) => {
 };
 
 module.exports = { getConfig, updateConfig, activateLicense, getLicenseStatus };
+
+// Set License Server Secret (encrypted). Public only if license is inactive/none/expired; otherwise Admin required.
+const setLicenseServerSecret = async (req, res, next) => {
+    try {
+        const { licenseServerSecret } = req.body;
+        if (!licenseServerSecret) throw createHttpError(400, "licenseServerSecret es requerido");
+        
+        let configDoc = await Restaurant.findOne();
+        if (!configDoc) configDoc = await Restaurant.create({});
+        const currentStatus = configDoc?.license?.status || 'none';
+
+        // If license is active/pending_payment, require Admin auth
+        if (currentStatus !== 'inactive' && currentStatus !== 'none' && currentStatus !== 'expired') {
+            const { accessToken } = req.cookies || {};
+            if (!accessToken) throw createHttpError(401, "No autenticado");
+            const decode = jwt.verify(accessToken, config.accessTokenSecret);
+            const admin = await User.findById(decode._id);
+            if (!admin || admin.role !== 'Admin') throw createHttpError(403, "Solo un Administrador puede actualizar el secreto del servidor");
+        }
+
+        const hardwareId = process.env.EMPRESA_ID || process.env.DOMAIN || 'local-pos-instance';
+        const keyMaterial = `${configDoc.accessTokenSecret || process.env.JWT_SECRET || ''}|${hardwareId}`;
+        const aesKey = crypto.createHash('sha256').update(keyMaterial).digest(); // 32 bytes
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', aesKey, iv);
+        const enc = Buffer.concat([cipher.update(licenseServerSecret, 'utf8'), cipher.final()]);
+        const tag = cipher.getAuthTag();
+
+        configDoc.license.serverSecretEnc = enc.toString('hex');
+        configDoc.license.serverSecretIv = iv.toString('hex');
+        configDoc.license.serverSecretTag = tag.toString('hex');
+        configDoc.license.serverSecretAlgo = 'AES-256-GCM';
+        await configDoc.save();
+
+        // Trigger a license status refresh to clear activation overlay if secret was the blocker
+        try { await localLicenseService.checkLicenseStatus(); } catch (_) {}
+
+        res.status(200).json({ success: true, message: "Secreto del servidor de licencias actualizado" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports.setLicenseServerSecret = setLicenseServerSecret;

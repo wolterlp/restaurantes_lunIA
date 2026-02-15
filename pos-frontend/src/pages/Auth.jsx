@@ -15,9 +15,9 @@ const Auth = () => {
   const [isRegister, setIsRegister] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Left Section */}
-      <div className="w-1/2 relative flex items-center justify-center bg-cover">
+    <div className="flex min-h-screen w-full flex-col md:flex-row">
+      {/* Left Section (hidden en móviles para carga y legibilidad) */}
+      <div className="hidden md:flex md:w-1/2 relative items-center justify-center bg-cover">
         {/* BG Image */}
         <img 
             className="w-full h-full object-cover" 
@@ -29,16 +29,16 @@ const Auth = () => {
         <div className="absolute inset-0 bg-black bg-opacity-80"></div>
 
         {/* Quote at bottom */}
-        <blockquote className="absolute bottom-40 px-8 text-2xl italic text-white">
+        <blockquote className="absolute bottom-20 lg:bottom-40 px-6 lg:px-8 text-lg lg:text-2xl italic text-white">
           "Sirve a todos clientes como si fuera tu ser mas preciado, la mejor comida con un servicio rápido, amable y ellos seguirán regresando."
           <br />
           <span className="block mt-4 text-yellow-400" style={{ color: theme?.primaryColor }}>- Fundador de LunIA, Walter López</span>
         </blockquote>
       </div>
 
-      {/* Right Section */}
-      <div className="w-1/2 min-h-screen bg-[#1a1a1a] p-10" style={{ backgroundColor: theme?.secondaryColor }}>
-        <div className="flex flex-col items-center gap-2">
+      {/* Right Section (full ancho en móvil) */}
+      <div className="w-full md:w-1/2 min-h-screen bg-[#1a1a1a] p-6 md:p-10" style={{ backgroundColor: theme?.secondaryColor }}>
+        <div className="flex flex-col items-center gap-2 mt-4 md:mt-0">
           {/* Main Logo - Shows configured logo if exists, else shows LunIA logo */}
           {theme?.logo ? (
               <img src={theme.logo} alt="Restaurant Logo" className="h-20 w-auto object-contain rounded-lg" />
@@ -48,7 +48,7 @@ const Auth = () => {
           <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">{theme?.name || "LunIA"}</h1>
         </div>
 
-        <h2 className="text-4xl text-center mt-10 font-semibold text-yellow-400 mb-10" style={{ color: theme?.primaryColor }}>
+        <h2 className="text-2xl md:text-4xl text-center mt-6 md:mt-10 font-semibold text-yellow-400 mb-6 md:mb-10" style={{ color: theme?.primaryColor }}>
           {isRegister ? "Registro de Empleado" : "Inicio de Sesión"}
         </h2>
 
@@ -56,7 +56,7 @@ const Auth = () => {
         {isRegister ? <Register setIsRegister={setIsRegister} /> : <Login />}
 
 
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center mt-4 md:mt-6">
           <p className="text-sm text-[#ababab]">
             {isRegister ? "¿Ya tienes una cuenta?" : "¿No tienes una cuenta?"}
             <a onClick={() => setIsRegister(!isRegister)} className="text-yellow-400 font-semibold hover:underline" href="#" style={{ color: theme?.primaryColor }}>
@@ -66,7 +66,7 @@ const Auth = () => {
         </div>
         
         {/* Branding Footer */}
-        <div className="absolute bottom-2 right-10 flex items-center gap-2 opacity-50">
+        <div className="md:absolute md:bottom-2 md:right-10 flex items-center gap-2 opacity-50 mt-8 md:mt-0 justify-center">
             <span className="text-xs text-gray-400">Desarrollado por</span>
             <img src={logoLunia} alt="LunIA" className="h-6 w-6 rounded-full" />
             <span className="text-xs font-bold text-gray-400">LunIA</span>

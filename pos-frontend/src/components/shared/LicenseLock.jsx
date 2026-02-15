@@ -155,7 +155,16 @@ const LicenseLock = () => {
                     <div className="mt-6 text-center text-xs text-gray-400">
                         <p>ID de Instalación: {config?._id || 'Desconocido'}</p>
                         <p className="mt-1">Contacte a soporte si necesita ayuda.</p>
-                        <p className="mt-1 font-semibold text-[#ecab0f]">ey.lunia@gmail.com</p>
+                        <div className="mt-1">
+                          <a
+                            href={import.meta.env.VITE_LICENSE_HELP_URL || '#'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-[#ecab0f] hover:underline"
+                          >
+                            {import.meta.env.VITE_LICENSE_HELP_URL || 'ey.lunia@gmail.com'}
+                          </a>
+                        </div>
                     </div>
                 </div>
             </div>

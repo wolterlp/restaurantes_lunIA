@@ -104,7 +104,7 @@ const MenuContainer = () => {
           return (
             <div
               key={item._id || item.id}
-              className="flex flex-col items-start justify-between p-3 rounded-lg h-[140px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a]"
+              className="flex flex-col items-start justify-between p-3 rounded-lg min-h-[140px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a]"
             >
               <div className="flex items-start justify-between w-full">
                 <h1 className="text-[#f5f5f5] text-md font-semibold truncate pr-2">
@@ -116,13 +116,6 @@ const MenuContainer = () => {
                 <p className="text-[#f5f5f5] text-md font-bold">
                   {formatCurrency(item.price)}
                 </p>
-                {((item.prepTime ?? 15) === 0) ? (
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${item.stock === 0 ? "bg-red-900 text-red-300" : "bg-[#333] text-[#ababab]"}`}>
-                    Stock: {typeof item.stock === "number" ? item.stock : "N/A"}
-                  </span>
-                ) : (
-                  <span className="text-xs font-semibold px-2 py-1 rounded bg-[#333] text-[#ababab]">Preparación</span>
-                )}
                 <div className="flex items-center justify-between bg-[#1f1f1f] px-2 py-1 rounded-lg gap-2">
                   <button
                     onClick={() => decrement(item._id || item.id)}
@@ -140,6 +133,15 @@ const MenuContainer = () => {
                     +
                   </button>
                 </div>
+              </div>
+              <div className="w-full mt-2">
+                {((item.prepTime ?? 15) === 0) ? (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded ${item.stock === 0 ? "bg-red-900 text-red-300" : "bg-[#333] text-[#ababab]"}`}>
+                    Stock: {typeof item.stock === "number" ? item.stock : "N/A"}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2 py-1 rounded bg-[#333] text-[#ababab]">Preparación</span>
+                )}
               </div>
               <div className="w-full mt-2">
                 {(item.sku || item.barcode) && (
